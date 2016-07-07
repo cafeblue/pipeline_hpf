@@ -633,9 +633,9 @@ sub picardCalculateHsMetrics {
     . "\\\n"
     . 'module load ' . $RSCRIPT . ' && ' . " \\\n"
     . "\\\n"
-    . "$JAVA -jar -Djava.io.tmpdir=\$TMPDIR -Xmx26G $PICARDTOOLS CollectHsMetrics I=$runfolder/$Pfolder O=$runfolder/picardCalculateHsMetrics/$sampleID.$postprocID.hs.metrics.ods BAIT_INTERVALS=" . $intervalFile . " TARGET_INTERVALS=" . $intervalFile." && \\\n" . "tail -n 4 $runfolder/picardCalculateHsMetrics/$sampleID.$postprocID.hs.metrics.ods  | tsp > $runfolder/picardCalculateHsMetrics/$sampleID.$postprocID.hs.metrics.tsp.ods && \\\n"
+    . "$JAVA -jar -Djava.io.tmpdir=\$TMPDIR -Xmx34G $PICARDTOOLS CollectHsMetrics I=$runfolder/$Pfolder O=$runfolder/picardCalculateHsMetrics/$sampleID.$postprocID.hs.metrics.ods BAIT_INTERVALS=" . $intervalFile . " TARGET_INTERVALS=" . $intervalFile." && \\\n" . "tail -n 4 $runfolder/picardCalculateHsMetrics/$sampleID.$postprocID.hs.metrics.ods  | tsp > $runfolder/picardCalculateHsMetrics/$sampleID.$postprocID.hs.metrics.tsp.ods && \\\n"
     . "ln -f $runfolder/picardCalculateHsMetrics/$sampleID.$postprocID.hs* $BACKUP_BASEDIR/matrics/ ; \\\n"
-    . "\'| jsub -j picardCalculateHsMetrics -b $runfolder  -nm 32000 -np 1 -nn 1 -nw 01:00:00 -ng localhd:10  $depend";
+    . "\'| jsub -j picardCalculateHsMetrics -b $runfolder  -nm 40000 -np 1 -nn 1 -nw 01:00:00 -ng localhd:10  $depend";
   print "\n\n************\npicardCalculateHsMetrics:\n$cmd\n************\n\n";
   my $cmdOut = `$cmd`;
   print "============\n$cmdOut============\n\n";
