@@ -395,8 +395,8 @@ sub bwa_mem {
     . 'mkdir $TMPDIR/bwa-mem && ' . " \\\n"
     . "cp $file_prefix\_R1_" . '$PBS_ARRAYID.fastq.gz' . " $file_prefix\_R2_" . '$PBS_ARRAYID.fastq.gz $TMPDIR/bwa-mem &&' . " \\\n"
     . 'bwa mem -R "@RG\tID:' . $sampleID . '\tSM:' . $sampleID . '\tLB:' . $sampleID . '\tPL:illumina"' .  " -t 4 $reference \$TMPDIR/bwa-mem/$short_prefix\_R1_" . '$PBS_ARRAYID.fastq.gz' . " \$TMPDIR/bwa-mem/$short_prefix\_R2_" . '$PBS_ARRAYID.fastq.gz | ' 
-    . '/hpf/tools/centos6/java/1.8.0_91/bin/java -jar -Djava.io.tmpdir=$TMPDIR -Xmx6G ' . $PICARDTOOLS . ' CleanSam I=/dev/stdin O=/dev/stdout | '
-    . '/hpf/tools/centos6/java/1.8.0_91/bin/java -jar -Djava.io.tmpdir=$TMPDIR -Xmx6G ' . $PICARDTOOLS . ' FixMateInformation I=/dev/stdin O=$TMPDIR/bwa-mem/picard.$PBS_ARRAYID.sorted.bam SO=coordinate &&' . " \\\n"
+    . "$JAVA -jar -Djava.io.tmpdir=\$TMPDIR -Xmx6G " . $PICARDTOOLS . ' CleanSam I=/dev/stdin O=/dev/stdout | '
+    . "$JAVA -jar -Djava.io.tmpdir=\$TMPDIR -Xmx6G " . $PICARDTOOLS . ' FixMateInformation I=/dev/stdin O=$TMPDIR/bwa-mem/picard.$PBS_ARRAYID.sorted.bam SO=coordinate &&' . " \\\n"
     . 'cp $TMPDIR/bwa-mem/picard.$PBS_ARRAYID.sorted.bam ' . " $runfolder/bwaAlign/ && \\\n"
     . 'rm -rf $TMPDIR/bwa-mem;'
     . "\'| jsub -j bwaAlign -b $runfolder  -nm 32000 --te $filenum -np 4 -nn 1 -nw 04:00:00 -ng localhd:100 $depend" ;
@@ -527,9 +527,9 @@ sub picardMeanQualityByCycle {
     . "\\\n"
     . 'module load ' . $RSCRIPT . ' && ' . " \\\n"
     . "\\\n"
-    . "$JAVA -jar -Djava.io.tmpdir=\$TMPDIR -Xmx7G $PICARDTOOLS MeanQualityByCycle I=$runfolder/$Pfolder O=$runfolder/picardMeanQualityByCycle/$sampleID.$postprocID.mean_quality_score_by_cycle.metrics.ods CHART=$runfolder/picardMeanQualityByCycle/$sampleID.$postprocID.mean_quality_score_by_cycle_chart.pdf &&" . " \\\n"
+    . "$JAVA -jar -Djava.io.tmpdir=\$TMPDIR -Xmx18G $PICARDTOOLS MeanQualityByCycle I=$runfolder/$Pfolder O=$runfolder/picardMeanQualityByCycle/$sampleID.$postprocID.mean_quality_score_by_cycle.metrics.ods CHART=$runfolder/picardMeanQualityByCycle/$sampleID.$postprocID.mean_quality_score_by_cycle_chart.pdf &&" . " \\\n"
     . "ln -f $runfolder/picardMeanQualityByCycle/$sampleID.$postprocID.mean_quality_score_by_cycle.* $BACKUP_BASEDIR/matrics/ ; \\\n"
-    . "\'| jsub -j picardMeanQualityByCycle -b $runfolder  -nm 12000 -np 1 -nn 1 -nw 01:00:00 -ng localhd:10 $depend";
+    . "\'| jsub -j picardMeanQualityByCycle -b $runfolder  -nm 24000 -np 1 -nn 1 -nw 01:00:00 -ng localhd:10 $depend";
   print "\n\n************\npicardMeanQualityByCycle:\n$cmd\n************\n\n";
   my $cmdOut = `$cmd`;
   print "============\n$cmdOut============\n\n";
@@ -553,9 +553,9 @@ sub picardCollectInsertSizeMetrics {
     . "\\\n"
     . 'module load ' . $RSCRIPT . ' && ' . " \\\n"
     . "\\\n"
-    . "$JAVA -jar -Djava.io.tmpdir=\$TMPDIR -Xmx7G $PICARDTOOLS CollectInsertSizeMetrics I=$runfolder/$Pfolder O=$runfolder/picardCollectInsertSizeMetrics/$sampleID.$postprocID.insert.metrics.ods H=$runfolder/picardCollectInsertSizeMetrics/$sampleID.$postprocID.historgram.pdf &&" . " \\\n"
+    . "$JAVA -jar -Djava.io.tmpdir=\$TMPDIR -Xmx18G $PICARDTOOLS CollectInsertSizeMetrics I=$runfolder/$Pfolder O=$runfolder/picardCollectInsertSizeMetrics/$sampleID.$postprocID.insert.metrics.ods H=$runfolder/picardCollectInsertSizeMetrics/$sampleID.$postprocID.historgram.pdf &&" . " \\\n"
     . "ln -f $runfolder/picardCollectInsertSizeMetrics/$sampleID.$postprocID.* $BACKUP_BASEDIR/matrics/ ; \\\n"
-    . "\'| jsub -j picardCollectInsertSizeMetrics -b $runfolder  -nm 12000 -np 1 -nn 1 -nw 01:00:00 -ng localhd:10  $depend";
+    . "\'| jsub -j picardCollectInsertSizeMetrics -b $runfolder  -nm 24000 -np 1 -nn 1 -nw 01:00:00 -ng localhd:10  $depend";
   print "\n\n************\npicardCollectInsertSizeMetrics:\n$cmd\n************\n\n";
   my $cmdOut = `$cmd`;
   print "============\n$cmdOut============\n\n";
@@ -579,9 +579,9 @@ sub picardCollectGcBiasMetrics {
     . "\\\n"
     . 'module load ' . $RSCRIPT . ' && ' . " \\\n"
     . "\\\n"
-    . "$JAVA -jar -Djava.io.tmpdir=\$TMPDIR -Xmx7G $PICARDTOOLS CollectGcBiasMetrics I=$runfolder/$Pfolder O=$runfolder/picardCollectGcBiasMetrics/$sampleID.$postprocID.gc_bias.metrics.ods CHART=$runfolder/picardCollectGcBiasMetrics/$sampleID.$postprocID.gc_bias.pdf S=$runfolder/picardCollectGcBiasMetrics/$sampleID.$postprocID.gc_bias_summary.txt R=$reference &&" . " \\\n"
+    . "$JAVA -jar -Djava.io.tmpdir=\$TMPDIR -Xmx18G $PICARDTOOLS CollectGcBiasMetrics I=$runfolder/$Pfolder O=$runfolder/picardCollectGcBiasMetrics/$sampleID.$postprocID.gc_bias.metrics.ods CHART=$runfolder/picardCollectGcBiasMetrics/$sampleID.$postprocID.gc_bias.pdf S=$runfolder/picardCollectGcBiasMetrics/$sampleID.$postprocID.gc_bias_summary.txt R=$reference &&" . " \\\n"
     . "ln -f $runfolder/picardCollectGcBiasMetrics/$sampleID.$postprocID.gc_bias* $BACKUP_BASEDIR/matrics/ ; \\\n"
-    . "\'| jsub -j picardCollectGcBiasMetrics -b $runfolder  -nm 12000 -np 1 -nn 1 -nw 01:00:00 -ng localhd:10  $depend";
+    . "\'| jsub -j picardCollectGcBiasMetrics -b $runfolder  -nm 24000 -np 1 -nn 1 -nw 01:00:00 -ng localhd:10  $depend";
   print "\n\n************\npicardCollectGcBiasMetrics:\n$cmd\n************\n\n";
   my $cmdOut = `$cmd`;
   print "============\n$cmdOut============\n\n";
@@ -605,9 +605,9 @@ sub picardQualityScoreDistribution {
     . "\\\n"
     . 'module load ' . $RSCRIPT . ' && ' . " \\\n"
     . "\\\n"
-    . "$JAVA -jar -Djava.io.tmpdir=\$TMPDIR -Xmx7G $PICARDTOOLS QualityScoreDistribution I=$runfolder/$Pfolder O=$runfolder/picardQualityScoreDistribution/$sampleID.$postprocID.quality_score.metrics.ods CHART=$runfolder/picardQualityScoreDistribution/$sampleID.$postprocID.quality_score.chart.pdf &&" . " \\\n"
+    . "$JAVA -jar -Djava.io.tmpdir=\$TMPDIR -Xmx18G $PICARDTOOLS QualityScoreDistribution I=$runfolder/$Pfolder O=$runfolder/picardQualityScoreDistribution/$sampleID.$postprocID.quality_score.metrics.ods CHART=$runfolder/picardQualityScoreDistribution/$sampleID.$postprocID.quality_score.chart.pdf &&" . " \\\n"
     . "ln -f $runfolder/picardQualityScoreDistribution/$sampleID.$postprocID.quality_score.* $BACKUP_BASEDIR/matrics/ ; \\\n"
-    . "\'| jsub -j picardQualityScoreDistribution -b $runfolder  -nm 12000 -np 1 -nn 1 -nw 01:00:00 -ng localhd:10  $depend";
+    . "\'| jsub -j picardQualityScoreDistribution -b $runfolder  -nm 24000 -np 1 -nn 1 -nw 01:00:00 -ng localhd:10  $depend";
   print "\n\n************\npicardQualityScoreDistribution:\n$cmd\n************\n\n";
   my $cmdOut = `$cmd`;
   print "============\n$cmdOut============\n\n";
@@ -633,9 +633,9 @@ sub picardCalculateHsMetrics {
     . "\\\n"
     . 'module load ' . $RSCRIPT . ' && ' . " \\\n"
     . "\\\n"
-    . "$JAVA -jar -Djava.io.tmpdir=\$TMPDIR -Xmx14G $PICARDTOOLS CollectHsMetrics I=$runfolder/$Pfolder O=$runfolder/picardCalculateHsMetrics/$sampleID.$postprocID.hs.metrics.ods BAIT_INTERVALS=" . $intervalFile . " TARGET_INTERVALS=" . $intervalFile." && \\\n" . "tail -n 4 $runfolder/picardCalculateHsMetrics/$sampleID.$postprocID.hs.metrics.ods  | tsp > $runfolder/picardCalculateHsMetrics/$sampleID.$postprocID.hs.metrics.tsp.ods && \\\n"
+    . "$JAVA -jar -Djava.io.tmpdir=\$TMPDIR -Xmx26G $PICARDTOOLS CollectHsMetrics I=$runfolder/$Pfolder O=$runfolder/picardCalculateHsMetrics/$sampleID.$postprocID.hs.metrics.ods BAIT_INTERVALS=" . $intervalFile . " TARGET_INTERVALS=" . $intervalFile." && \\\n" . "tail -n 4 $runfolder/picardCalculateHsMetrics/$sampleID.$postprocID.hs.metrics.ods  | tsp > $runfolder/picardCalculateHsMetrics/$sampleID.$postprocID.hs.metrics.tsp.ods && \\\n"
     . "ln -f $runfolder/picardCalculateHsMetrics/$sampleID.$postprocID.hs* $BACKUP_BASEDIR/matrics/ ; \\\n"
-    . "\'| jsub -j picardCalculateHsMetrics -b $runfolder  -nm 20000 -np 1 -nn 1 -nw 01:00:00 -ng localhd:10  $depend";
+    . "\'| jsub -j picardCalculateHsMetrics -b $runfolder  -nm 32000 -np 1 -nn 1 -nw 01:00:00 -ng localhd:10  $depend";
   print "\n\n************\npicardCalculateHsMetrics:\n$cmd\n************\n\n";
   my $cmdOut = `$cmd`;
   print "============\n$cmdOut============\n\n";
@@ -659,9 +659,9 @@ sub CollectAlignmentSummaryMetrics {
     . "\\\n"
     . 'module load ' . $RSCRIPT . ' && ' . " \\\n"
     . "\\\n"
-    . "$JAVA -jar -Djava.io.tmpdir=\$TMPDIR -Xmx7G $PICARDTOOLS CollectAlignmentSummaryMetrics I=$runfolder/$Pfolder O=$runfolder/CollectAlignmentSummaryMetrics/$sampleID.$postprocID.aligment_summary.metrics.ods R=$reference &&" . " \\\n"
+    . "$JAVA -jar -Djava.io.tmpdir=\$TMPDIR -Xmx18G $PICARDTOOLS CollectAlignmentSummaryMetrics I=$runfolder/$Pfolder O=$runfolder/CollectAlignmentSummaryMetrics/$sampleID.$postprocID.aligment_summary.metrics.ods R=$reference &&" . " \\\n"
     . "ln -f $runfolder/CollectAlignmentSummaryMetrics/$sampleID.$postprocID.ali* $BACKUP_BASEDIR/matrics/ ; \\\n"
-    . "\'| jsub -j CollectAlignmentSummaryMetrics -b $runfolder  -nm 12000 -np 1 -nn 1 -nw 01:00:00 -ng localhd:10  $depend";
+    . "\'| jsub -j CollectAlignmentSummaryMetrics -b $runfolder  -nm 24000 -np 1 -nn 1 -nw 01:00:00 -ng localhd:10  $depend";
   print "\n\n************\npicardCollectAlignmentSummaryMetrics:\n$cmd\n************\n\n";
   my $cmdOut = `$cmd`;
   print "============\n$cmdOut============\n\n";
@@ -770,7 +770,7 @@ sub gatkGenoTyper {
     . 'module load ' . $GATK . ' && ' . " \\\n"
     . 'module load ' . $TABIX . ' && ' . " \\\n"
     . "\\\n"
-    . "$JAVA  -jar -Djava.io.tmpdir=\$TMPDIR -Xmx14G \$GATK -T HaplotypeCaller --output_mode EMIT_ALL_CONFIDENT_SITES -rf BadCigar --min_indel_count_for_genotyping 5  \\\n"
+    . "$JAVA  -jar -Djava.io.tmpdir=\$TMPDIR -Xmx26G \$GATK -T HaplotypeCaller --output_mode EMIT_ALL_CONFIDENT_SITES -rf BadCigar --min_indel_count_for_genotyping 5  \\\n"
     . "-stand_call_conf 30 --min_base_quality_score 20 $max_deletion_fraction -stand_emit_conf 10 -glm BOTH". " \\\n"
     . "-L $captureKitFile -I $runfolder/$Pfolder -o $runfolder/gatkGenoTyper/$sampleID.$postprocID.genotyper.all.vcf -R $reference --dbsnp $dbSNP &&" . " \\\n"
     . "bgzip $runfolder/gatkGenoTyper/$sampleID.$postprocID.genotyper.all.vcf &&" . " \\\n"
@@ -779,7 +779,7 @@ sub gatkGenoTyper {
     . "ln -f $runfolder/gatkGenoTyper/$sampleID.$postprocID.genotyper.all.vcf.gz.tbi $BACKUP_BASEDIR/region_vcf/$sampleID.$postprocID.$genePanel.genotyper.all.vcf.gz.tbi &&" . " \\\n"
     . "ln -f $runfolder/gatkGenoTyper/$sampleID.$postprocID.genotyper.all.vcf.idx $BACKUP_BASEDIR/region_vcf/$sampleID.$postprocID.$genePanel.genotyper.all.vcf.idx &&" . " \\\n"
     . "\\\n"
-    . "$JAVA  -jar -Djava.io.tmpdir=\$TMPDIR -Xmx14G \$GATK -T HaplotypeCaller --output_mode EMIT_ALL_CONFIDENT_SITES -rf BadCigar --min_indel_count_for_genotyping 5  \\\n"
+    . "$JAVA  -jar -Djava.io.tmpdir=\$TMPDIR -Xmx26G \$GATK -T HaplotypeCaller --output_mode EMIT_ALL_CONFIDENT_SITES -rf BadCigar --min_indel_count_for_genotyping 5  \\\n"
     . "-stand_call_conf 30 --min_base_quality_score 20 $max_deletion_fraction -stand_emit_conf 10 -glm SNP". " \\\n"
     . "-L $captureKitFile -I $runfolder/$Pfolder -o $runfolder/gatkGenoTyper/$sampleID.$postprocID.genotyper.snp.vcf -R $reference --dbsnp $dbSNP &&" . " \\\n"
     . "bgzip $runfolder/gatkGenoTyper/$sampleID.$postprocID.genotyper.snp.vcf &&" . " \\\n"
@@ -788,7 +788,7 @@ sub gatkGenoTyper {
     . "ln -f $runfolder/gatkGenoTyper/$sampleID.$postprocID.genotyper.snp.vcf.gz.tbi $BACKUP_BASEDIR/region_vcf/$sampleID.$postprocID.$genePanel.genotyper.snp.vcf.gz.tbi &&" . " \\\n"
     . "ln -f $runfolder/gatkGenoTyper/$sampleID.$postprocID.genotyper.snp.vcf.idx $BACKUP_BASEDIR/region_vcf/$sampleID.$postprocID.$genePanel.genotyper.snp.vcf.idx &&" . " \\\n"
     . "\\\n"
-    . "$JAVA  -jar -Djava.io.tmpdir=\$TMPDIR -Xmx14G \$GATK -T HaplotypeCaller --output_mode EMIT_ALL_CONFIDENT_SITES -rf BadCigar --min_indel_count_for_genotyping 5  \\\n"
+    . "$JAVA  -jar -Djava.io.tmpdir=\$TMPDIR -Xmx26G \$GATK -T HaplotypeCaller --output_mode EMIT_ALL_CONFIDENT_SITES -rf BadCigar --min_indel_count_for_genotyping 5  \\\n"
     . "-stand_call_conf 30 --min_base_quality_score 20 $max_deletion_fraction -stand_emit_conf 10 -glm INDEL". " \\\n"
     . "-L $captureKitFile -I $runfolder/$Pfolder -o $runfolder/gatkGenoTyper/$sampleID.$postprocID.genotyper.indel.vcf -R $reference --dbsnp $dbSNP &&" . " \\\n"
     . "bgzip $runfolder/gatkGenoTyper/$sampleID.$postprocID.genotyper.indel.vcf &&" . " \\\n"
@@ -796,7 +796,7 @@ sub gatkGenoTyper {
     . "ln -f $runfolder/gatkGenoTyper/$sampleID.$postprocID.genotyper.indel.vcf.gz $BACKUP_BASEDIR/region_vcf/$sampleID.$postprocID.$genePanel.genotyper.indel.vcf.gz  &&" . " \\\n"
     . "ln -f $runfolder/gatkGenoTyper/$sampleID.$postprocID.genotyper.indel.vcf.gz.tbi $BACKUP_BASEDIR/region_vcf/$sampleID.$postprocID.$genePanel.genotyper.indel.vcf.gz.tbi  &&" . " \\\n"
     . "ln -f $runfolder/gatkGenoTyper/$sampleID.$postprocID.genotyper.indel.vcf.idx $BACKUP_BASEDIR/region_vcf/$sampleID.$postprocID.$genePanel.genotyper.indel.vcf.idx ;" . " \\\n"
-    . "\'| jsub -j gatkGenoTyper -b $runfolder  -nm 20000 -np 1 -nn 1 -nw 48:00:00 -ng localhd:10 $depend";
+    . "\'| jsub -j gatkGenoTyper -b $runfolder  -nm 32000 -np 1 -nn 1 -nw 48:00:00 -ng localhd:10 $depend";
   print "\n\n************\ngatkGenoTyper:\n$cmd\n************\n\n";
   my $cmdOut = `$cmd`;
   print "============\n$cmdOut============\n\n";
@@ -887,12 +887,12 @@ sub gatkRawVariantsCall {
     . 'if [ ${chr} = "25" ]; then'
     . '    chr=M; fi;'
     . " \\\n"
-    . "$JAVA  -jar -Djava.io.tmpdir=\$TMPDIR -Xmx14G \$GATK -T HaplotypeCaller -rf BadCigar --min_indel_count_for_genotyping 5 $miseqCall  \\\n"
+    . "$JAVA  -jar -Djava.io.tmpdir=\$TMPDIR -Xmx26G \$GATK -T HaplotypeCaller -rf BadCigar --min_indel_count_for_genotyping 5 $miseqCall  \\\n"
     . "-stand_call_conf 30 --min_base_quality_score 20 $max_deletion_fraction -stand_emit_conf 10 -glm BOTH". " \\\n"
     . '-L ${chr}' . " \\\n"
     . "-I $runfolder/$Pfolder -o $runfolder/gatkRawVariantsCall/$sampleID.$postprocID" . '.raw_variants.chr${chr}.vcf' . " -R $reference --dbsnp $dbSNP &&" . " \\\n"
     . "\\\n"
-    . "\'| jsub -j gatkRawVariantsCall -b $runfolder  -nm 20000 -np 1 -nn 1 --te 25 -nw 04:00:00 -ng localhd:10 $depend";
+    . "\'| jsub -j gatkRawVariantsCall -b $runfolder  -nm 32000 -np 1 -nn 1 --te 25 -nw 04:00:00 -ng localhd:10 $depend";
   print "\n\n************\ngatkRawVariantsCall:\n$cmd\n************\n\n";
   my $cmdOut = `$cmd`;
   print "============\n$cmdOut============\n\n";
@@ -957,21 +957,21 @@ sub gatkFilteredRecalSNP {
     . "\\\n"
     . 'module load ' . $GATK . ' && ' . " \\\n"
     . "\\\n"
-    . "$JAVA  -jar -Djava.io.tmpdir=\$TMPDIR -Xmx14G \$GATK -T VariantRecalibrator -mode SNP -tranche 100.0 -tranche 99.9 -tranche 99.0 -tranche 90.0 -an DP -an QD -an FS -an MQRankSum -an ReadPosRankSum  \\\n"
+    . "$JAVA  -jar -Djava.io.tmpdir=\$TMPDIR -Xmx26G \$GATK -T VariantRecalibrator -mode SNP -tranche 100.0 -tranche 99.9 -tranche 99.0 -tranche 90.0 -an DP -an QD -an FS -an MQRankSum -an ReadPosRankSum  \\\n"
     . "$maxGaussians_SNP -tranchesFile $runfolder/gatkFilteredRecalSNP/$sampleID.$postprocID.snp.tranches -resource:dbsnp,known=true,training=false,truth=false,prior=2.0 $dbSNP \\\n"
     . "-recalFile $runfolder/gatkFilteredRecalSNP/$sampleID.$postprocID.snp.recal -rscriptFile $runfolder/gatkFilteredRecalSNP/$sampleID.$postprocID.snp.plot.R -resource:omni,known=false,training=true,truth=true,prior=12.0 $omni_vcf \\\n"
     . "-resource:1000G,known=false,training=true,truth=false,prior=10.0 $g1k_snp_vcf -resource:hapmap,known=false,training=true,truth=true,prior=15.0 $hapmap_vcf  \\\n"
     . "-input $runfolder/$Pfolder_snp -input $vcfPaddingFile -R $reference &&" . " \\\n"
     . "\\\n"
-    . "$JAVA  -jar -Djava.io.tmpdir=\$TMPDIR -Xmx14G \$GATK -T ApplyRecalibration -mode SNP --ts_filter_level 99.0  \\\n"
+    . "$JAVA  -jar -Djava.io.tmpdir=\$TMPDIR -Xmx26G \$GATK -T ApplyRecalibration -mode SNP --ts_filter_level 99.0  \\\n"
     . " -tranchesFile $runfolder/gatkFilteredRecalSNP/$sampleID.$postprocID.snp.tranches -recalFile $runfolder/gatkFilteredRecalSNP/$sampleID.$postprocID.snp.recal -o $runfolder/gatkFilteredRecalSNP/$sampleID.$postprocID.recal.filtered.snp.vcf \\\n"
     . "-input $runfolder/$Pfolder_snp  -R $reference &&" . " \\\n"
     . "\\\n"
-    . "$JAVA  -jar -Djava.io.tmpdir=\$TMPDIR -Xmx14G \$GATK -T VariantEval -EV TiTvVariantEvaluator -EV CountVariants  \\\n"
+    . "$JAVA  -jar -Djava.io.tmpdir=\$TMPDIR -Xmx26G \$GATK -T VariantEval -EV TiTvVariantEvaluator -EV CountVariants  \\\n"
     . "-o $runfolder/gatkFilteredRecalSNP/$sampleID.$postprocID.snp.recal.eval.txt -eval:recal_snps $runfolder/gatkFilteredRecalSNP/$sampleID.$postprocID.recal.filtered.snp.vcf \\\n"
     . "--dbsnp $dbSNP -R $reference " . " \\\n"
     . "\\\n"
-    . "\'| jsub -j gatkFilteredRecalSNP -b $runfolder  -nm 20000 -np 1 -nn 1 -nw 03:00:00 -ng localhd:10 $depend";
+    . "\'| jsub -j gatkFilteredRecalSNP -b $runfolder  -nm 32000 -np 1 -nn 1 -nw 03:00:00 -ng localhd:10 $depend";
   print "\n\n************\ngatkFilteredRecalSNP:\n$cmd\n************\n\n";
   my $cmdOut = `$cmd`;
   print "============\n$cmdOut============\n\n";
@@ -995,20 +995,20 @@ sub gatkFilteredRecalINDEL {
     . "\\\n"
     . 'module load ' . $GATK . ' && ' . " \\\n"
     . "\\\n"
-    . "$JAVA  -jar -Djava.io.tmpdir=\$TMPDIR -Xmx14G \$GATK -T VariantRecalibrator -mode INDEL -tranche 100.0 -tranche 99.9 -tranche 99.0 -tranche 90.0 -an DP -an FS -an MQRankSum -an ReadPosRankSum  \\\n"
+    . "$JAVA  -jar -Djava.io.tmpdir=\$TMPDIR -Xmx26G \$GATK -T VariantRecalibrator -mode INDEL -tranche 100.0 -tranche 99.9 -tranche 99.0 -tranche 90.0 -an DP -an FS -an MQRankSum -an ReadPosRankSum  \\\n"
     . "$maxGaussians_INDEL -tranchesFile $runfolder/gatkFilteredRecalINDEL/$sampleID.$postprocID.indel.tranches -resource:dbsnp,known=true,training=false,truth=false,prior=2.0 $dbSNP \\\n"
     . "-recalFile $runfolder/gatkFilteredRecalINDEL/$sampleID.$postprocID.indel.recal -rscriptFile $runfolder/gatkFilteredRecalINDEL/$sampleID.$postprocID.indel.plot.R --minNumBadVariants 5000 \\\n"
     . "-resource:mills,known=true,training=true,truth=true,prior=12.0 $g1k_indel_vcf -input $runfolder/$Pfolder_indel  -R $reference &&" . " \\\n"
     . "\\\n"
-    . "$JAVA  -jar -Djava.io.tmpdir=\$TMPDIR -Xmx14G \$GATK -T ApplyRecalibration -mode INDEL --ts_filter_level 99.0  \\\n"
+    . "$JAVA  -jar -Djava.io.tmpdir=\$TMPDIR -Xmx26G \$GATK -T ApplyRecalibration -mode INDEL --ts_filter_level 99.0  \\\n"
     . " -tranchesFile $runfolder/gatkFilteredRecalINDEL/$sampleID.$postprocID.indel.tranches -recalFile $runfolder/gatkFilteredRecalINDEL/$sampleID.$postprocID.indel.recal -o $runfolder/gatkFilteredRecalINDEL/$sampleID.$postprocID.recal.filtered.indel.vcf \\\n"
     . "-input $runfolder/$Pfolder_indel  -R $reference &&" . " \\\n"
     . "\\\n"
-    . "$JAVA  -jar -Djava.io.tmpdir=\$TMPDIR -Xmx14G \$GATK -T VariantEval  \\\n"
+    . "$JAVA  -jar -Djava.io.tmpdir=\$TMPDIR -Xmx26G \$GATK -T VariantEval  \\\n"
     . "-o $runfolder/gatkFilteredRecalINDEL/$sampleID.$postprocID.indel.recal.eval.txt -eval:recal_indels $runfolder/gatkFilteredRecalINDEL/$sampleID.$postprocID.recal.filtered.indel.vcf \\\n"
     . "--dbsnp $dbSNP -R $reference " . " \\\n"
     . "\\\n"
-    . "\'| jsub -j gatkFilteredRecalINDEL -b $runfolder  -nm 20000 -np 1 -nn 1 -nw 03:00:00 -ng localhd:10 $depend";
+    . "\'| jsub -j gatkFilteredRecalINDEL -b $runfolder  -nm 32000 -np 1 -nn 1 -nw 03:00:00 -ng localhd:10 $depend";
   print "\n\n************\ngatkFilteredRecalINDEL:\n$cmd\n************\n\n";
   my $cmdOut = `$cmd`;
   print "============\n$cmdOut============\n\n";
@@ -1250,11 +1250,11 @@ sub snpEff {
     . "\\\n"
     . 'module load ' . $PERL . ' && ' . " \\\n"
     . "\\\n"
-    . "$JAVA -jar -Xmx11G /hpf/largeprojects/pray/llau/programs/snpEff/current/snpEff/snpEff.jar eff \\\n"
+    . "$JAVA -jar -Xmx20G /hpf/largeprojects/pray/llau/programs/snpEff/current/snpEff/snpEff.jar eff \\\n"
     . "-v -i vcf -o vcf -c /hpf/largeprojects/pray/llau/programs/snpEff/current/snpEff/snpEff.config -spliceSiteSize 7 hg19 \\\n"
     . "$runfolder/$Pfolder2 > $runfolder/snpEff/$sampleID.$postprocID.var.annotated.refseq.vcf && \\\n"
     . "\\\n"
-    . "$JAVA -jar -Xmx11G /hpf/largeprojects/pray/llau/programs/snpEff/current/snpEff/snpEff.jar eff \\\n"
+    . "$JAVA -jar -Xmx20G /hpf/largeprojects/pray/llau/programs/snpEff/current/snpEff/snpEff.jar eff \\\n"
     . "-v -motif -nextprot -i vcf -o vcf -c /hpf/largeprojects/pray/llau/programs/snpEff/current/snpEff/snpEff.config GRCh37.75 \\\n"
     . "$runfolder/$Pfolder2 > $runfolder/snpEff/$sampleID.$postprocID.var.annotated.ens.vcf && \\\n"
     . "\\\n"
@@ -1296,7 +1296,7 @@ sub snpEff {
     . "sha256sum sid_$sampleID.aid_$postprocID.gp_$genePanel.annotated.filter.txt  >  sid_$sampleID.aid_$postprocID.gp_$genePanel.annotated.filter.txt.sha256sum && \\\n"
     . "ln -f sid_* $BACKUP_BASEDIR/variants/ \\\n"
     . "\\\n"
-    . "\'| jsub -j snpEff -b $runfolder  -nm 16000 -np 1 -nn 1 -nw 02:00:00 -ng localhd:1 $depend";
+    . "\'| jsub -j snpEff -b $runfolder  -nm 26000 -np 1 -nn 1 -nw 02:00:00 -ng localhd:1 $depend";
   print "\n\n************\nsnpeEff-annotation:\n$cmd\n************\n\n";
   my $cmdOut = `$cmd`;
   print "============\n$cmdOut============\n\n";
@@ -1388,7 +1388,7 @@ sub muTect {
     . 'if [ ${chr} = "25" ]; then' . "\\\n"
     . '  chr=M; fi;' . "\\\n"
     . "\\\n"
-    . "/hpf/tools/centos6/java/1.6.0/bin/java -Xmx4g -Djava.io.tmpdir=/tmp -jar /hpf/tools/centos6/mutect/1.1.4/muTect-1.1.4.jar --analysis_type MuTect \\\n"
+    . "$JAVA -Xmx10g -Djava.io.tmpdir=/tmp -jar /hpf/tools/centos6/mutect/1.1.4/muTect-1.1.4.jar --analysis_type MuTect \\\n"
     . "--reference_sequence /hpf/largeprojects/adam/local/reference/homosapiens/ucsc/hs37d5/fasta/hs37d5.fa \\\n"
     . "--cosmic /hpf/largeprojects/adam/local/genomes/homosapiens/mutect/1.1.4/resources/b37_cosmic_v54_120711.vcf \\\n"
     . "--dbsnp /hpf/largeprojects/pray/llau/internal_databases/gatk_bundle/2.8_b37/dbsnp_138.b37.vcf \\\n"
