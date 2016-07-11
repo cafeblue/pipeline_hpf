@@ -714,11 +714,11 @@ sub gatkQscoreRecalibration {
     . 'module load ' . $GATK . ' && ' . " \\\n"
     . 'module load ' . $SAMTOOLS . ' && ' . " \\\n"
     . "\\\n"
-    . "$JAVA  -jar -Djava.io.tmpdir=\$TMPDIR -Xmx34G \$GATK -T BaseRecalibrator -I $runfolder/$Pfolder -o $runfolder/gatkQscoreRecalibration/recal_data.txt -R $reference -l INFO -knownSites $dbSNP -nct 4 &&" . " \\\n"
-    . "$JAVA  -jar -Djava.io.tmpdir=\$TMPDIR -Xmx34G \$GATK -T PrintReads -I $runfolder/$Pfolder -o $runfolder/gatkQscoreRecalibration/$sampleID.$postprocID.realigned-recalibrated.bam -R $reference -l INFO -BQSR $runfolder/gatkQscoreRecalibration/recal_data.txt -nct 4 &&" . " \\\n"
+    . "$JAVA  -jar -Djava.io.tmpdir=\$TMPDIR -Xmx55G \$GATK -T BaseRecalibrator -I $runfolder/$Pfolder -o $runfolder/gatkQscoreRecalibration/recal_data.txt -R $reference -l INFO -knownSites $dbSNP -nct 4 &&" . " \\\n"
+    . "$JAVA  -jar -Djava.io.tmpdir=\$TMPDIR -Xmx55G \$GATK -T PrintReads -I $runfolder/$Pfolder -o $runfolder/gatkQscoreRecalibration/$sampleID.$postprocID.realigned-recalibrated.bam -R $reference -l INFO -BQSR $runfolder/gatkQscoreRecalibration/recal_data.txt -nct 4 &&" . " \\\n"
     . 'samtools index' . " $runfolder/gatkQscoreRecalibration/$sampleID.$postprocID.realigned-recalibrated.bam && " . " \\\n"
     . "ln -f $runfolder/gatkQscoreRecalibration/$sampleID.$postprocID.realigned-recalibrated.ba* $BACKUP_BASEDIR/bam/" . " \\\n"
-    . "\'| jsub -j gatkQscoreRecalibration -b $runfolder  -nm 40000 -np 4 -nn 1 -nw 12:00:00 -ng localhd:100 $depend";
+    . "\'| jsub -j gatkQscoreRecalibration -b $runfolder  -nm 63000 -np 4 -nn 1 -nw 12:00:00 -ng localhd:100 $depend";
   print "\n\n************\ngatkQscoreRecalibration:\n$cmd\n************\n\n";
   my $cmdOut = `$cmd`;
   print "============\n$cmdOut============\n\n";
@@ -770,8 +770,8 @@ sub gatkGenoTyper {
     . 'module load ' . $GATK . ' && ' . " \\\n"
     . 'module load ' . $TABIX . ' && ' . " \\\n"
     . "\\\n"
-    . "$JAVA  -jar -Djava.io.tmpdir=\$TMPDIR -Xmx26G \$GATK -T HaplotypeCaller --output_mode EMIT_ALL_CONFIDENT_SITES -rf BadCigar --min_indel_count_for_genotyping 5  \\\n"
-    . "-stand_call_conf 30 --min_base_quality_score 20 $max_deletion_fraction -stand_emit_conf 10 -glm BOTH". " \\\n"
+    . "$JAVA  -jar -Djava.io.tmpdir=\$TMPDIR -Xmx34G \$GATK -T HaplotypeCaller -rf BadCigar  \\\n"
+    . "-stand_call_conf 30 --min_base_quality_score 20 -stand_emit_conf 10 ". " \\\n"
     . "-L $captureKitFile -I $runfolder/$Pfolder -o $runfolder/gatkGenoTyper/$sampleID.$postprocID.genotyper.all.vcf -R $reference --dbsnp $dbSNP &&" . " \\\n"
     . "bgzip $runfolder/gatkGenoTyper/$sampleID.$postprocID.genotyper.all.vcf &&" . " \\\n"
     . "tabix -f $runfolder/gatkGenoTyper/$sampleID.$postprocID.genotyper.all.vcf.gz -p vcf &&" . " \\\n"
@@ -779,24 +779,25 @@ sub gatkGenoTyper {
     . "ln -f $runfolder/gatkGenoTyper/$sampleID.$postprocID.genotyper.all.vcf.gz.tbi $BACKUP_BASEDIR/region_vcf/$sampleID.$postprocID.$genePanel.genotyper.all.vcf.gz.tbi &&" . " \\\n"
     . "ln -f $runfolder/gatkGenoTyper/$sampleID.$postprocID.genotyper.all.vcf.idx $BACKUP_BASEDIR/region_vcf/$sampleID.$postprocID.$genePanel.genotyper.all.vcf.idx &&" . " \\\n"
     . "\\\n"
-    . "$JAVA  -jar -Djava.io.tmpdir=\$TMPDIR -Xmx26G \$GATK -T HaplotypeCaller --output_mode EMIT_ALL_CONFIDENT_SITES -rf BadCigar --min_indel_count_for_genotyping 5  \\\n"
-    . "-stand_call_conf 30 --min_base_quality_score 20 $max_deletion_fraction -stand_emit_conf 10 -glm SNP". " \\\n"
-    . "-L $captureKitFile -I $runfolder/$Pfolder -o $runfolder/gatkGenoTyper/$sampleID.$postprocID.genotyper.snp.vcf -R $reference --dbsnp $dbSNP &&" . " \\\n"
-    . "bgzip $runfolder/gatkGenoTyper/$sampleID.$postprocID.genotyper.snp.vcf &&" . " \\\n"
-    . "tabix -f $runfolder/gatkGenoTyper/$sampleID.$postprocID.genotyper.snp.vcf.gz -p vcf &&" . " \\\n"
-    . "ln -f $runfolder/gatkGenoTyper/$sampleID.$postprocID.genotyper.snp.vcf.gz $BACKUP_BASEDIR/region_vcf/$sampleID.$postprocID.$genePanel.genotyper.snp.vcf.gz &&" . " \\\n"
-    . "ln -f $runfolder/gatkGenoTyper/$sampleID.$postprocID.genotyper.snp.vcf.gz.tbi $BACKUP_BASEDIR/region_vcf/$sampleID.$postprocID.$genePanel.genotyper.snp.vcf.gz.tbi &&" . " \\\n"
-    . "ln -f $runfolder/gatkGenoTyper/$sampleID.$postprocID.genotyper.snp.vcf.idx $BACKUP_BASEDIR/region_vcf/$sampleID.$postprocID.$genePanel.genotyper.snp.vcf.idx &&" . " \\\n"
-    . "\\\n"
-    . "$JAVA  -jar -Djava.io.tmpdir=\$TMPDIR -Xmx26G \$GATK -T HaplotypeCaller --output_mode EMIT_ALL_CONFIDENT_SITES -rf BadCigar --min_indel_count_for_genotyping 5  \\\n"
-    . "-stand_call_conf 30 --min_base_quality_score 20 $max_deletion_fraction -stand_emit_conf 10 -glm INDEL". " \\\n"
-    . "-L $captureKitFile -I $runfolder/$Pfolder -o $runfolder/gatkGenoTyper/$sampleID.$postprocID.genotyper.indel.vcf -R $reference --dbsnp $dbSNP &&" . " \\\n"
-    . "bgzip $runfolder/gatkGenoTyper/$sampleID.$postprocID.genotyper.indel.vcf &&" . " \\\n"
-    . "tabix -f $runfolder/gatkGenoTyper/$sampleID.$postprocID.genotyper.indel.vcf.gz -p vcf &&" . " \\\n"
-    . "ln -f $runfolder/gatkGenoTyper/$sampleID.$postprocID.genotyper.indel.vcf.gz $BACKUP_BASEDIR/region_vcf/$sampleID.$postprocID.$genePanel.genotyper.indel.vcf.gz  &&" . " \\\n"
-    . "ln -f $runfolder/gatkGenoTyper/$sampleID.$postprocID.genotyper.indel.vcf.gz.tbi $BACKUP_BASEDIR/region_vcf/$sampleID.$postprocID.$genePanel.genotyper.indel.vcf.gz.tbi  &&" . " \\\n"
-    . "ln -f $runfolder/gatkGenoTyper/$sampleID.$postprocID.genotyper.indel.vcf.idx $BACKUP_BASEDIR/region_vcf/$sampleID.$postprocID.$genePanel.genotyper.indel.vcf.idx ;" . " \\\n"
-    . "\'| jsub -j gatkGenoTyper -b $runfolder  -nm 32000 -np 1 -nn 1 -nw 48:00:00 -ng localhd:10 $depend";
+    #. "$JAVA  -jar -Djava.io.tmpdir=\$TMPDIR -Xmx34G \$GATK -T HaplotypeCaller -rf BadCigar \\\n"
+    #. "-stand_call_conf 30 --min_base_quality_score 20 -stand_emit_conf 10". " \\\n"
+    #. "-L $captureKitFile -I $runfolder/$Pfolder -o $runfolder/gatkGenoTyper/$sampleID.$postprocID.genotyper.snp.vcf -R $reference --dbsnp $dbSNP &&" . " \\\n"
+    #. "bgzip $runfolder/gatkGenoTyper/$sampleID.$postprocID.genotyper.snp.vcf &&" . " \\\n"
+    #. "tabix -f $runfolder/gatkGenoTyper/$sampleID.$postprocID.genotyper.snp.vcf.gz -p vcf &&" . " \\\n"
+    #. "ln -f $runfolder/gatkGenoTyper/$sampleID.$postprocID.genotyper.snp.vcf.gz $BACKUP_BASEDIR/region_vcf/$sampleID.$postprocID.$genePanel.genotyper.snp.vcf.gz &&" . " \\\n"
+    #. "ln -f $runfolder/gatkGenoTyper/$sampleID.$postprocID.genotyper.snp.vcf.gz.tbi $BACKUP_BASEDIR/region_vcf/$sampleID.$postprocID.$genePanel.genotyper.snp.vcf.gz.tbi &&" . " \\\n"
+    #. "ln -f $runfolder/gatkGenoTyper/$sampleID.$postprocID.genotyper.snp.vcf.idx $BACKUP_BASEDIR/region_vcf/$sampleID.$postprocID.$genePanel.genotyper.snp.vcf.idx &&" . " \\\n"
+    #. "\\\n"
+    #. "$JAVA  -jar -Djava.io.tmpdir=\$TMPDIR -Xmx34G \$GATK -T HaplotypeCaller -rf BadCigar \\\n"
+    #. "-stand_call_conf 30 --min_base_quality_score 20 -stand_emit_conf 10". " \\\n"
+    #. "-L $captureKitFile -I $runfolder/$Pfolder -o $runfolder/gatkGenoTyper/$sampleID.$postprocID.genotyper.indel.vcf -R $reference --dbsnp $dbSNP &&" . " \\\n"
+    #. "bgzip $runfolder/gatkGenoTyper/$sampleID.$postprocID.genotyper.indel.vcf &&" . " \\\n"
+    #. "tabix -f $runfolder/gatkGenoTyper/$sampleID.$postprocID.genotyper.indel.vcf.gz -p vcf &&" . " \\\n"
+    #. "ln -f $runfolder/gatkGenoTyper/$sampleID.$postprocID.genotyper.indel.vcf.gz $BACKUP_BASEDIR/region_vcf/$sampleID.$postprocID.$genePanel.genotyper.indel.vcf.gz  &&" . " \\\n"
+    #. "ln -f $runfolder/gatkGenoTyper/$sampleID.$postprocID.genotyper.indel.vcf.gz.tbi $BACKUP_BASEDIR/region_vcf/$sampleID.$postprocID.$genePanel.genotyper.indel.vcf.gz.tbi  &&" . " \\\n"
+    #. "ln -f $runfolder/gatkGenoTyper/$sampleID.$postprocID.genotyper.indel.vcf.idx $BACKUP_BASEDIR/region_vcf/$sampleID.$postprocID.$genePanel.genotyper.indel.vcf.idx ;" . " \\\n"
+    . "ln -f $runfolder/gatkGenoTyper/$sampleID.$postprocID.genotyper.indel.vcf.idx $BACKUP_BASEDIR/region_vcf/$sampleID.$postprocID.$genePanel.genotyper.all.vcf.idx ;" . " \\\n"
+    . "\'| jsub -j gatkGenoTyper -b $runfolder  -nm 40000 -np 1 -nn 1 -nw 48:00:00 -ng localhd:10 $depend";
   print "\n\n************\ngatkGenoTyper:\n$cmd\n************\n\n";
   my $cmdOut = `$cmd`;
   print "============\n$cmdOut============\n\n";
@@ -887,12 +888,12 @@ sub gatkRawVariantsCall {
     . 'if [ ${chr} = "25" ]; then'
     . '    chr=M; fi;'
     . " \\\n"
-    . "$JAVA  -jar -Djava.io.tmpdir=\$TMPDIR -Xmx26G \$GATK -T HaplotypeCaller -rf BadCigar --min_indel_count_for_genotyping 5 $miseqCall  \\\n"
-    . "-stand_call_conf 30 --min_base_quality_score 20 $max_deletion_fraction -stand_emit_conf 10 -glm BOTH". " \\\n"
+    . "$JAVA  -jar -Djava.io.tmpdir=\$TMPDIR -Xmx53G \$GATK -T HaplotypeCaller -rf BadCigar   \\\n"
+    . "-stand_call_conf 30 --min_base_quality_score 20 -stand_emit_conf 10 ". " \\\n"
     . '-L ${chr}' . " \\\n"
     . "-I $runfolder/$Pfolder -o $runfolder/gatkRawVariantsCall/$sampleID.$postprocID" . '.raw_variants.chr${chr}.vcf' . " -R $reference --dbsnp $dbSNP &&" . " \\\n"
     . "\\\n"
-    . "\'| jsub -j gatkRawVariantsCall -b $runfolder  -nm 32000 -np 1 -nn 1 --te 25 -nw 04:00:00 -ng localhd:10 $depend";
+    . "\'| jsub -j gatkRawVariantsCall -b $runfolder  -nm 63000 -np 1 -nn 1 --te 25 -nw 04:00:00 -ng localhd:10 $depend";
   print "\n\n************\ngatkRawVariantsCall:\n$cmd\n************\n\n";
   my $cmdOut = `$cmd`;
   print "============\n$cmdOut============\n\n";
@@ -957,21 +958,21 @@ sub gatkFilteredRecalSNP {
     . "\\\n"
     . 'module load ' . $GATK . ' && ' . " \\\n"
     . "\\\n"
-    . "$JAVA  -jar -Djava.io.tmpdir=\$TMPDIR -Xmx26G \$GATK -T VariantRecalibrator -mode SNP -tranche 100.0 -tranche 99.9 -tranche 99.0 -tranche 90.0 -an DP -an QD -an FS -an MQRankSum -an ReadPosRankSum  \\\n"
+    . "$JAVA  -jar -Djava.io.tmpdir=\$TMPDIR -Xmx34G \$GATK -T VariantRecalibrator -mode SNP -tranche 100.0 -tranche 99.9 -tranche 99.0 -tranche 90.0 -an DP -an QD -an FS -an MQRankSum -an ReadPosRankSum  \\\n"
     . "$maxGaussians_SNP -tranchesFile $runfolder/gatkFilteredRecalSNP/$sampleID.$postprocID.snp.tranches -resource:dbsnp,known=true,training=false,truth=false,prior=2.0 $dbSNP \\\n"
     . "-recalFile $runfolder/gatkFilteredRecalSNP/$sampleID.$postprocID.snp.recal -rscriptFile $runfolder/gatkFilteredRecalSNP/$sampleID.$postprocID.snp.plot.R -resource:omni,known=false,training=true,truth=true,prior=12.0 $omni_vcf \\\n"
     . "-resource:1000G,known=false,training=true,truth=false,prior=10.0 $g1k_snp_vcf -resource:hapmap,known=false,training=true,truth=true,prior=15.0 $hapmap_vcf  \\\n"
     . "-input $runfolder/$Pfolder_snp -input $vcfPaddingFile -R $reference &&" . " \\\n"
     . "\\\n"
-    . "$JAVA  -jar -Djava.io.tmpdir=\$TMPDIR -Xmx26G \$GATK -T ApplyRecalibration -mode SNP --ts_filter_level 99.0  \\\n"
+    . "$JAVA  -jar -Djava.io.tmpdir=\$TMPDIR -Xmx34G \$GATK -T ApplyRecalibration -mode SNP --ts_filter_level 99.0  \\\n"
     . " -tranchesFile $runfolder/gatkFilteredRecalSNP/$sampleID.$postprocID.snp.tranches -recalFile $runfolder/gatkFilteredRecalSNP/$sampleID.$postprocID.snp.recal -o $runfolder/gatkFilteredRecalSNP/$sampleID.$postprocID.recal.filtered.snp.vcf \\\n"
     . "-input $runfolder/$Pfolder_snp  -R $reference &&" . " \\\n"
     . "\\\n"
-    . "$JAVA  -jar -Djava.io.tmpdir=\$TMPDIR -Xmx26G \$GATK -T VariantEval -EV TiTvVariantEvaluator -EV CountVariants  \\\n"
+    . "$JAVA  -jar -Djava.io.tmpdir=\$TMPDIR -Xmx34G \$GATK -T VariantEval -EV TiTvVariantEvaluator -EV CountVariants  \\\n"
     . "-o $runfolder/gatkFilteredRecalSNP/$sampleID.$postprocID.snp.recal.eval.txt -eval:recal_snps $runfolder/gatkFilteredRecalSNP/$sampleID.$postprocID.recal.filtered.snp.vcf \\\n"
     . "--dbsnp $dbSNP -R $reference " . " \\\n"
     . "\\\n"
-    . "\'| jsub -j gatkFilteredRecalSNP -b $runfolder  -nm 32000 -np 1 -nn 1 -nw 03:00:00 -ng localhd:10 $depend";
+    . "\'| jsub -j gatkFilteredRecalSNP -b $runfolder  -nm 40000 -np 1 -nn 1 -nw 03:00:00 -ng localhd:10 $depend";
   print "\n\n************\ngatkFilteredRecalSNP:\n$cmd\n************\n\n";
   my $cmdOut = `$cmd`;
   print "============\n$cmdOut============\n\n";
@@ -995,20 +996,20 @@ sub gatkFilteredRecalINDEL {
     . "\\\n"
     . 'module load ' . $GATK . ' && ' . " \\\n"
     . "\\\n"
-    . "$JAVA  -jar -Djava.io.tmpdir=\$TMPDIR -Xmx26G \$GATK -T VariantRecalibrator -mode INDEL -tranche 100.0 -tranche 99.9 -tranche 99.0 -tranche 90.0 -an DP -an FS -an MQRankSum -an ReadPosRankSum  \\\n"
+    . "$JAVA  -jar -Djava.io.tmpdir=\$TMPDIR -Xmx34G \$GATK -T VariantRecalibrator -mode INDEL -tranche 100.0 -tranche 99.9 -tranche 99.0 -tranche 90.0 -an DP -an FS -an MQRankSum -an ReadPosRankSum  \\\n"
     . "$maxGaussians_INDEL -tranchesFile $runfolder/gatkFilteredRecalINDEL/$sampleID.$postprocID.indel.tranches -resource:dbsnp,known=true,training=false,truth=false,prior=2.0 $dbSNP \\\n"
     . "-recalFile $runfolder/gatkFilteredRecalINDEL/$sampleID.$postprocID.indel.recal -rscriptFile $runfolder/gatkFilteredRecalINDEL/$sampleID.$postprocID.indel.plot.R --minNumBadVariants 5000 \\\n"
     . "-resource:mills,known=true,training=true,truth=true,prior=12.0 $g1k_indel_vcf -input $runfolder/$Pfolder_indel  -R $reference &&" . " \\\n"
     . "\\\n"
-    . "$JAVA  -jar -Djava.io.tmpdir=\$TMPDIR -Xmx26G \$GATK -T ApplyRecalibration -mode INDEL --ts_filter_level 99.0  \\\n"
+    . "$JAVA  -jar -Djava.io.tmpdir=\$TMPDIR -Xmx34G \$GATK -T ApplyRecalibration -mode INDEL --ts_filter_level 99.0  \\\n"
     . " -tranchesFile $runfolder/gatkFilteredRecalINDEL/$sampleID.$postprocID.indel.tranches -recalFile $runfolder/gatkFilteredRecalINDEL/$sampleID.$postprocID.indel.recal -o $runfolder/gatkFilteredRecalINDEL/$sampleID.$postprocID.recal.filtered.indel.vcf \\\n"
     . "-input $runfolder/$Pfolder_indel  -R $reference &&" . " \\\n"
     . "\\\n"
-    . "$JAVA  -jar -Djava.io.tmpdir=\$TMPDIR -Xmx26G \$GATK -T VariantEval  \\\n"
+    . "$JAVA  -jar -Djava.io.tmpdir=\$TMPDIR -Xmx34G \$GATK -T VariantEval  \\\n"
     . "-o $runfolder/gatkFilteredRecalINDEL/$sampleID.$postprocID.indel.recal.eval.txt -eval:recal_indels $runfolder/gatkFilteredRecalINDEL/$sampleID.$postprocID.recal.filtered.indel.vcf \\\n"
     . "--dbsnp $dbSNP -R $reference " . " \\\n"
     . "\\\n"
-    . "\'| jsub -j gatkFilteredRecalINDEL -b $runfolder  -nm 32000 -np 1 -nn 1 -nw 03:00:00 -ng localhd:10 $depend";
+    . "\'| jsub -j gatkFilteredRecalINDEL -b $runfolder  -nm 40000 -np 1 -nn 1 -nw 03:00:00 -ng localhd:10 $depend";
   print "\n\n************\ngatkFilteredRecalINDEL:\n$cmd\n************\n\n";
   my $cmdOut = `$cmd`;
   print "============\n$cmdOut============\n\n";
