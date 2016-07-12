@@ -8,6 +8,7 @@ use HPF::pipeline;
 use Time::localtime;
 use Time::Piece;
 
+#perl ./call_pipeline.pl -s 202214 -a 3142 -f /hpf/largeprojects/pray/clinical/fastq_v5/AHK22CBCXX/Sample_202214 -g exome.gp10 -r /hpf/largeprojects/pray/llau/clinical_test/v5_miseq/202214-3142-20165555555555-exome.gp10-b37 -p exome
 ###########       Global Parameters   ##########################
 our ($sampleID, $postprocID, $fastqDir, $genePanel, $pipeline, $runfolder, $startPoint, $normalPair) = ('','','','','','','NEW','');
 
@@ -1233,8 +1234,6 @@ sub annovar_newGP {
   }
 }
 
-
-
 sub snpEff {
   #Pfolder1: annovar/$sampleID.$postprocID.gatk.snp.indel.annovar
   #Pfolder2: gatkFilteredRecalVariant/$sampleID.$postprocID.gatk.snps.indel.vcf
@@ -1538,6 +1537,7 @@ sub read_in_pipeline_config {
     } elsif ($name eq "JAVA") {
       $JAVA = $value;
     }
+
   }
   close(FILE);
   return ($sd, $ann, $backup, $gatk, $bwa, $ptools, $stools, $tab, $pl, $vtools, $btools, $rscript, $reference, $dbSNP, $omni_vcf, $g1k_snp_vcf, $g1k_indel_vcf, $clinvar_indel_vcf, $hgmdAML, $hgmdAS, $hapmap_vcf, $vcfPaddingFile,$JAVA);
@@ -1550,6 +1550,7 @@ sub read_in_genepanel_config {
   my $data = "";
   my ($pipeIDtmp, $gene_panel_text_tmp, $panelExon10bpPadFulltmp, $panelExon10bpPadBedFiletmp, $panelBedFiletmp, $panelBedFileFulltmp, $captureKitFiletmp );
   open (FILE, "< $gpConfigFile") or die "Can't open $gpConfigFile for read: $!\n";
+  print "gpConfigFile=$gpConfigFile\n";
   while ($data=<FILE>) {
     chomp $data;
     my @splitTab = split(/\t/,$data);
