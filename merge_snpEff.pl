@@ -406,19 +406,41 @@ sub isoformPrint{
           #this is the transcript that must be used
           #insert into isoform hash
           #print STDERR "isoformHash geneName=$geneName, transcript=$transcript\n";
+          my $effectString = $chr . "\t" . $pos . "\t" . $rsID . "\t" . $ref ."\t" . $alt . "\t" . $qual . "\t" . $filter . "\t" . $infoVcf . ";ANN=" . $isoform . "\t" . $format . "\t" . $gt;
           if ($alt=~/\,/) {
+            if (defined $isoformHash{"$chr\t$pos\t$ref\t$alt\t$geneName\t$transcript"}) {
+              ###het-alt variant
+              my $annIHT = $isoformHash{"$chr\t$pos\t$ref\t$alt\t$geneName\t$transcript"};
+              my $newIHT = "ANN=" . $isoform . ",";
+              $annIHT=~s/ANN=/$newIHT/gi;
+              print STDERR "alt-het $annIHT";
+              $isoformHash{"$chr\t$pos\t$ref\t$alt\t$geneName\t$transcript"} = $annIHT;
+            } else {
+              if (defined $isoformHash{"$chr\t$pos\t$ref\t$alt\t$geneName\t$transcript"}) {
+                ###two effects for this het-alt transcript
+                my $annIHT = $isoformHash{"$chr\t$pos\t$ref\t$alt\t$geneName\t$transcript"};
+                my $newIHT = "ANN=" . $isoform . ",";
+                $annIHT=~s/ANN=/$newIHT/gi;
+                print STDERR "alt-het $annIHT";
+                $isoformHash{"$chr\t$pos\t$ref\t$alt\t$geneName\t$transcript"} = $annIHT;
+              } else {
+                $isoformHash{"$chr\t$pos\t$ref\t$alt\t$geneName\t$transcript"} = $effectString;
+              }
+              #$isoformHash{"$chr\t$pos\t$ref\t$alt\t$geneName\t$transcript"} = $chr . "\t" . $pos . "\t" . $rsID . "\t" . $ref ."\t" . $alt . "\t" . $qual . "\t" . $filter . "\t" . $infoVcf . ";ANN=" . $isoform . "\t" . $format . "\t" . $gt;
+            }
+            #ensure that the transcript is the same and that the allele is the same
+          } else {
+            ###two effects for this het transcript
             if (defined $isoformHash{"$chr\t$pos\t$ref\t$alt\t$geneName\t$transcript"}) {
               my $annIHT = $isoformHash{"$chr\t$pos\t$ref\t$alt\t$geneName\t$transcript"};
               my $newIHT = "ANN=" . $isoform . ",";
               $annIHT=~s/ANN=/$newIHT/gi;
-              #print STDERR "alt-het $annIHT";
+              print STDERR "alt-het $annIHT";
               $isoformHash{"$chr\t$pos\t$ref\t$alt\t$geneName\t$transcript"} = $annIHT;
             } else {
-              $isoformHash{"$chr\t$pos\t$ref\t$alt\t$geneName\t$transcript"} = $chr . "\t" . $pos . "\t" . $rsID . "\t" . $ref ."\t" . $alt . "\t" . $qual . "\t" . $filter . "\t" . $infoVcf . ";ANN=" . $isoform . "\t" . $format . "\t" . $gt;
+              $isoformHash{"$chr\t$pos\t$ref\t$alt\t$geneName\t$transcript"} = $effectString;
             }
-            #ensure that the transcript is the same and that the allele is the same
-          } else {
-            $isoformHash{"$chr\t$pos\t$ref\t$alt\t$geneName\t$transcript"} = $chr . "\t" . $pos . "\t" . $rsID . "\t" . $ref ."\t" . $alt . "\t" . $qual . "\t" . $filter . "\t" . $infoVcf . ";ANN=" . $isoform . "\t" . $format . "\t" . $gt;
+            ####$isoformHash{"$chr\t$pos\t$ref\t$alt\t$geneName\t$transcript"} = $chr . "\t" . $pos . "\t" . $rsID . "\t" . $ref ."\t" . $alt . "\t" . $qual . "\t" . $filter . "\t" . $infoVcf . ";ANN=" . $isoform . "\t" . $format . "\t" . $gt;
           }
           if ($type eq "ensembl") {
             $ensAnn{"$chr\t$pos\t$ref\t$alt"} = "1";
@@ -553,8 +575,8 @@ sub isoformPrint{
       }                         #foreach my $isoform (@splitComma)
       #if we're going longest transcript then input it into the hash here -> because it' wasn't in the disease file
       if ((!defined $refAnn{"$chr\t$pos\t$ref\t$alt"}) && ($type eq "refseq")) {
-        print STDERR "lastIsoformNames=$lastIsoformNames\n";
-        print STDERR "lastIsoform=$lastIsoform\n";
+        #print STDERR "lastIsoformNames=$lastIsoformNames\n";
+        #print STDERR "lastIsoform=$lastIsoform\n";
         ###if the alt is a het-alt
         if ($alt=~/\,/) {
           if (defined $isoformHash{"$chr\t$pos\t$ref\t$alt\t$lastIsoformNames"}) {

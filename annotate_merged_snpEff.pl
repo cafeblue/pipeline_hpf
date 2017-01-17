@@ -1344,8 +1344,8 @@ while ($data=<FILE>) {
     my $gtNo = "";
     my $errors = "";
 
-    if ($rGt eq "het-alt") {
-      #if it's alt-het get all information from snpEff
+    if ($rGt eq "het-alt" || $snpEff=~/\|\,/) {
+      #if it's alt-het get all information from snpEff OR if there's two effects for one transcript
       my @splitSEIC = split(/\,/,$snpEff);
       foreach my $sei (@splitSEIC) { #will there ever be a case for more than two alt-het? three? how is that handled in VCF
         my @splitSnpEffInfo = split(/\|/,$sei);
