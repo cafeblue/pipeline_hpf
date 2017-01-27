@@ -6,44 +6,6 @@ use HPF::pipeline;
 use Time::localtime;
 use Time::Piece;
 
-###stress case #1
-###GJB2
-#/hpf/largeprojects/pray/llau/pipeline/pipeline_hpf_v5.1/pipeline_hpf_v5/call_pipeline.pl -s 283271 -a 3395 -f /hpf/largeprojects/pray/clinical/fastq_v5/AHT2JLBCXX/Sample_283271 -g hl.gp22 -r /hpf/largeprojects/pray/llau/clinical_test/v5_miseq/283271-3395-20170111111111-hl.gp22-b37 -p exome -i gatkRawVariantsCall
-
-###IFITM5
-#/hpf/largeprojects/pray/llau/pipeline/pipeline_hpf_v5.1/pipeline_hpf_v5/call_pipeline.pl -s 228942 -a 4346 -f /hpf/largeprojects/pray/clinical/fastq_v5/BH2JG2BCXY/Sample_228942 -g ct.gp16 -r /hpf/largeprojects/pray/llau/clinical_test/v5_miseq/228942-4346-20170111111111-ct.gp16-b37 -p exome -i gatkRawVariantsCall
-
-###Exome sample -- #run when exome filters fixed
-#/hpf/largeprojects/pray/llau/pipeline/pipeline_hpf_v5.1/pipeline_hpf_v5/call_pipeline.pl -s 295582 -a 4956 -f /hpf/largeprojects/pray/clinical/fastq_v5/BHFFCMBCXY/Sample_295582 -g exome.gp26 -r /hpf/largeprojects/pray/llau/clinical_test/v5_miseq/295582-4956-20170111111111-exome.gp26-b37 -p exome
-
-###Winnie's sample CT -snpEff
-#/hpf/largeprojects/pray/llau/pipeline/pipeline_hpf_v5.1/pipeline_hpf_v5/call_pipeline.pl -s 297361 -a 4908 -f /hpf/largeprojects/pray/clinical/fastq_v5/AHFH7FBCXY/Sample_297361 -g ct.gp16 -r /hpf/largeprojects/pray/llau/clinical_test/v5_miseq/297361-4908-20170111111111-ct.gp16-b37 -p exome
-
-#297801
-#/hpf/largeprojects/pray/llau/pipeline/pipeline_hpf_v5.1/pipeline_hpf_v5/call_pipeline.pl -s 297801 -a 4987 -f /hpf/largeprojects/pray/clinical/fastq_v5/AHCWG5BCXY/Sample_297801 -g hl.gp27 -r /hpf/largeprojects/pray/llau/clinical_test/v5_miseq/297801-4987-20170111111111-hl.gp27-b37 -p exome -i gatkJointGenotyping
-
-#297822 - snpEff
-#/hpf/largeprojects/pray/llau/pipeline/pipeline_hpf_v5.1/pipeline_hpf_v5/call_pipeline.pl -s 297822 -a 4989 -f /hpf/largeprojects/pray/clinical/fastq_v5/AHCWG5BCXY/Sample_297822 -g ai.gp18 -r /hpf/largeprojects/pray/llau/clinical_test/v5_miseq/297822-4989-20170111111111-ai.gp18-b37 -p exome
-
-#297660
-#/hpf/largeprojects/pray/llau/pipeline/pipeline_hpf_v5.1/pipeline_hpf_v5/call_pipeline.pl -s 297660 -a 4988 -f /hpf/largeprojects/pray/clinical/fastq_v5/AHCWG5BCXY/Sample_297660 -g hl.gp27 -r /hpf/largeprojects/pray/llau/clinical_test/v5_miseq/297660-4988-20170111111111-hl.gp27-b37 -p exome -i gatkRawVariantsCall
-
-#297645 - snpEff
-#/hpf/largeprojects/pray/llau/pipeline/pipeline_hpf_v5.1/pipeline_hpf_v5/call_pipeline.pl -s 297645 -a 4965 -f /hpf/largeprojects/pray/clinical/fastq_v5/BHCWGGBCXY/Sample_297645 -g hl.gp27 -r /hpf/largeprojects/pray/llau/clinical_test/v5_miseq/297645-4965-20170111111111-hl.gp27-b37 -p exome
-
-#298150
-#/hpf/largeprojects/pray/llau/pipeline/pipeline_hpf_v5.1/pipeline_hpf_v5/call_pipeline.pl -s 298150 -a 4977 -f /hpf/largeprojects/pray/clinical/fastq_v5/BHCNYCBCXY/Sample_298150 -g ai.gp18 -r /hpf/largeprojects/pray/llau/clinical_test/v5_miseq/298150-4977-20170111111111-ai.gp18-b37 -p exome -i gatkRawVariantsCall
-
-#297662
-#/hpf/largeprojects/pray/llau/pipeline/pipeline_hpf_v5.1/pipeline_hpf_v5/call_pipeline.pl -s 297662 -a 4991 -f /hpf/largeprojects/pray/clinical/fastq_v5/AHCWG5BCXY/Sample_297662 -g hl.gp27 -r /hpf/largeprojects/pray/llau/clinical_test/v5_miseq/297662-4991-20170111111111-hl.gp27-b37 -p exome -i gatkRawVariantsCall
-
-#287309 #SLC26A5 c.-53-2A>G
-#/hpf/largeprojects/pray/llau/pipeline/pipeline_hpf_v5.1/pipeline_hpf_v5/call_pipeline.pl -s 287309 -a 4878 -f /hpf/largeprojects/pray/clinical/fastq_v5/AHCFCYBCXY/Sample_287309 -g hl.gp27 -r /hpf/largeprojects/pray/llau/clinical_test/v5_miseq/287309-4878-20170111111111-hl.gp27-b37 -p exome -i gatkRawVariantsCall
-
-#297013 - snpEff
-#/hpf/largeprojects/pray/llau/pipeline/pipeline_hpf_v5.1/pipeline_hpf_v5/call_pipeline.pl -s 297013 -a 4858 -f /hpf/largeprojects/pray/clinical/fastq_v5/BHCTCJBCXY/Sample_297013 -g hl.gp27 -r /hpf/largeprojects/pray/llau/clinical_test/v5_miseq/297013-4858-20170111111111-hl.gp27-b37 -p exome
-
-
 ###########       Global Parameters   ##########################
 our ($sampleID, $postprocID, $fastqDir, $genePanel, $pipeline, $runfolder, $startPoint, $normalPair) = ('','','','','','','NEW','');
 
