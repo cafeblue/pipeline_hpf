@@ -1322,8 +1322,7 @@ sub muTect2 {
 
 sub muTectCombine {
   my ($jobID, $Pfolder, $Pfolder2) = @_;
-  my $normal_bam_file = (split(/\//, $Pfolder2))[-1];
-  my ($normal_sampleID, $normal_postprocID) = split(/\./, $normal_bam_file);
+  my $normal_postprocID = $Pfolder2;
   my $depend = $jobID eq '' ? "" : "-aft afterok -o $jobID";
   if ( -d "$runfolder/mutectCombine") {
     print "Jsub folder already exists, removing...\nrm -rf $runfolder/mutectCombine\n";
@@ -1364,8 +1363,7 @@ sub muTectCombine {
 
 sub muTect2Combine {
   my ($jobID, $Pfolder, $Pfolder2) = @_;
-  my $normal_bam_file = (split(/\//, $Pfolder2))[-1];
-  my ($normal_sampleID, $normal_postprocID) = split(/\./, $normal_bam_file);
+  my $normal_postprocID = $Pfolder2;
   my $depend = $jobID eq '' ? "" : "-aft afterok -o $jobID";
   if ( -d "$runfolder/mutect2Combine") {
     print "Jsub folder already exists, removing...\nrm -rf $runfolder/mutect2Combine\n";
