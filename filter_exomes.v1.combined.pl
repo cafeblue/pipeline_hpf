@@ -197,7 +197,8 @@ my $annovarEnsExon = "Annovar Ensembl Exonic Variant Info";
 my $annovarEnsNonCoding = "Annovar Ensembl Gene or Nearest Gene";
 #need to calculate percent CDS affected and the 1> variant/gene
 
-my $rareFreq = 0.05;            #rare frequency we want to filter on
+my $exomeRareFreq = 0.1;
+my $gpRareFreq = 0.05;          #rare frequency we want to filter on
 my $rareFreqInternal = 0.1;     #rare frequency we want to filter on
 my $qdThreshold = 2.0;
 my $snpFS = 60.0;
@@ -210,6 +211,7 @@ my $snpMQRankSum = -12.5;
 my $snpReadPosRankSum = -8.0;
 my $indelFS = 200.0;
 my $indelReadPosRankSum = -20.0;
+my $exonPaddingBp = 10;
 
 my @header = ();
 my %colNum = ();
@@ -582,9 +584,17 @@ while ($data=<FILE>) {
     $worksheet->write($rowNum, 0, "$data"); #print out to excel
     $rowNum++;                              #print out to excel
   } else {                                  #filter
+
+    ##exome using 0.10
+    my $espExomeAFFilter = 1;
+    my $thouExomeAFFilter = 1;
+    my $exacExomeAFFilter = 1;
+
+    ###gene panel using 0.05
     my $espAFFilter = 1;
     my $thouAFFilter = 1;
     my $exacAFFilter = 1;
+
     my $espMAFAAAFFilter = 1;
     my $espMAFEAAFFilter = 1;
     my $thousGAFRAFFilter = 1;
@@ -606,59 +616,64 @@ while ($data=<FILE>) {
     my $snpEffLoc = "";
     my $qualFilter = 1;
     my $useVar = 0;
+
     my @splitTab = split(/\t/,$data);
     my $annChr = $splitTab[0];
     my $annPos = $splitTab[1];
     my $vtType = $splitTab[$colNum{$variantType}];
+    my $cDNAPos = $splitTab[$colNum{$snpEffAnnCC}];
     foreach my $cHeader (keys %colNum) {
       my $colRow = $colNum{$cHeader};
       my $colInfo = $splitTab[$colRow];
       if ($cHeader eq $effect) { # check to see if variant is non coding (but include splicing)
         #print STDERR "1. EFFECT colInfo=$colInfo\n";
         $snpEffLoc = $colInfo;
-        if (($colInfo=~/intergenic/i) || ($colInfo=~/intragenic/i) || ($colInfo=~/upstream/i) || ($colInfo=~/downstream/i)) {
+        if (($colInfo=~/upstream/i) || ($colInfo=~/downstream/i)) {
           #print STDERR "2. filter=$filter\n";
           #$filter = 0;
           $locationFilter = 0;
         }
       } elsif ($cHeader eq $espMAF) {
-        $espAFFilter = alleleFreqComp($colInfo);
+        $espAFFilter = alleleFreqComp($colInfo, $gpRareFreq);
+        $espExomeAFFilter = alleleFreqComp($colInfo, $exomeRareFreq);
       } elsif ($cHeader eq $thousG) {
-        $thouAFFilter = alleleFreqComp($colInfo);
+        $thouAFFilter = alleleFreqComp($colInfo, $gpRareFreq);
+        $thouExomeAFFilter = alleleFreqComp($colInfo, $exomeRareFreq);
       } elsif ($cHeader eq $exacALL) {
-        $exacAFFilter = alleleFreqComp($colInfo);
+        $exacAFFilter = alleleFreqComp($colInfo, $gpRareFreq);
+        $exacExomeAFFilter = alleleFreqComp($colInfo, $exomeRareFreq);
       } elsif ($cHeader eq $espMAFAA) {
-        $espMAFAAAFFilter = alleleFreqComp($colInfo);
+        $espMAFAAAFFilter = alleleFreqComp($colInfo, $gpRareFreq);
       } elsif ($cHeader eq $espMAFEA) {
-        $espMAFEAAFFilter = alleleFreqComp($colInfo);
+        $espMAFEAAFFilter = alleleFreqComp($colInfo, $gpRareFreq);
       } elsif ($cHeader eq $thousGAFR) {
-        $thousGAFRAFFilter = alleleFreqComp($colInfo);
+        $thousGAFRAFFilter = alleleFreqComp($colInfo, $gpRareFreq);
       } elsif ($cHeader eq $thousGAMR) {
-        $thousGAMRAFFilter = alleleFreqComp($colInfo);
+        $thousGAMRAFFilter = alleleFreqComp($colInfo, $gpRareFreq);
       } elsif ($cHeader eq $thousGEASN) {
-        $thousGEASNAFFilter = alleleFreqComp($colInfo);
+        $thousGEASNAFFilter = alleleFreqComp($colInfo, $gpRareFreq);
       } elsif ($cHeader eq $thousGSASN) {
-        $thousGSASNAFFilter = alleleFreqComp($colInfo);
+        $thousGSASNAFFilter = alleleFreqComp($colInfo, $gpRareFreq);
       } elsif ($cHeader eq $thousGEUR) {
-        $thousGEURAFFilter = alleleFreqComp($colInfo);
+        $thousGEURAFFilter = alleleFreqComp($colInfo, $gpRareFreq);
       } elsif ($cHeader eq $exacAFR) {
-        $exacAFRAFFilter = alleleFreqComp($colInfo);
+        $exacAFRAFFilter = alleleFreqComp($colInfo, $gpRareFreq);
       } elsif ($cHeader eq $exacAMR) {
-        $exacAMRAFFilter = alleleFreqComp($colInfo);
+        $exacAMRAFFilter = alleleFreqComp($colInfo, $gpRareFreq);
       } elsif ($cHeader eq $exacEAS) {
-        $exacEASAFFilter = alleleFreqComp($colInfo);
+        $exacEASAFFilter = alleleFreqComp($colInfo, $gpRareFreq);
       } elsif ($cHeader eq $exacFIN) {
-        $exacFINAFFilter = alleleFreqComp($colInfo);
+        $exacFINAFFilter = alleleFreqComp($colInfo, $gpRareFreq);
       } elsif ($cHeader eq $exacNFE) {
-        $exacNFEAFFilter = alleleFreqComp($colInfo);
+        $exacNFEAFFilter = alleleFreqComp($colInfo, $gpRareFreq);
       } elsif ($cHeader eq $exacOTH) {
-        $exacOTHAFFilter = alleleFreqComp($colInfo);
+        $exacOTHAFFilter = alleleFreqComp($colInfo, $gpRareFreq);
       } elsif ($cHeader eq $exacSAS) {
-        $exacSASAFFilter = alleleFreqComp($colInfo);
+        $exacSASAFFilter = alleleFreqComp($colInfo, $gpRareFreq);
       } elsif ($cHeader eq $internalAFSNPs) {
-        $internalAFSNPsAFFilter = alleleFreqComp($colInfo);
+        $internalAFSNPsAFFilter = alleleFreqComp($colInfo, $gpRareFreq);
       } elsif ($cHeader eq $internalAFIndels) {
-        $internalAFIndelsAFFilter = alleleFreqComp($colInfo);
+        $internalAFIndelsAFFilter = alleleFreqComp($colInfo, $gpRareFreq);
       } elsif ($cHeader eq $qd) {
         #print STDERR "QD colInfo=$colInfo\n";
         if ((defined $colInfo) && ($colInfo ne "")) {
@@ -755,75 +770,99 @@ while ($data=<FILE>) {
             }
           }
         } else {
-          print STDERR "Variant type not recognized $colInfo\n";
+          print STDERR "Variant type not recognized colInfo=$colInfo\n";
         }
       } elsif ($cHeader eq $hgmdSid) {
         if ((defined $colInfo) && ($colInfo ne "")) {
           #print STDERR "hgmdsnp present - $data\n";
-          if ($annotatedFile=~/exome/) { #if it's exome ignore this step
-          } else {
-            $hgmdClinVar = 1;
-          }
+          #if ($annotatedFile=~/exome/) { #if it's exome ignore this step
+          #} else {
+          $hgmdClinVar = 1;
+          #}
         }
       } elsif ($cHeader eq $hgmdIid) {
         if ((defined $colInfo) && ($colInfo ne "")) {
           #print STDERR "hgmdpindel present - $data\n";
-          if ($annotatedFile=~/exome/) { #if it's exome ignore this step
-          } else {
-            $hgmdClinVar = 1;
-          }
+          #if ($annotatedFile=~/exome/) { #if it's exome ignore this step
+          #} else {
+          $hgmdClinVar = 1;
+          #}
         }
       } elsif ($cHeader eq $clinVar) {
         if ((defined $colInfo) && ($colInfo ne "")) {
           #print STDERR "clinVar present - $data\n";
 
-          if ($annotatedFile=~/exome/) { #if it's exome ignore this step
-          } else {
-            ###if clinVar is pathogenic or probably-pathogenic - as long as one is designed as such
-            # print STDERR "colInfo=$colInfo\n";
-            my @splitLCV = split(/\|/,$colInfo);
-            my $cvPath = 0;
-            foreach my $cvS (@splitLCV) {
-              if (lc($cvS) eq "pathogenic") {
-                $cvPath = 1;
-              } elsif (lc($cvS) eq "probable-pathogenic") {
-                $cvPath = 1;
-              }
-            }
-            if ($cvPath == 1) {
-              $hgmdClinVar = 1;
+          #if ($annotatedFile=~/exome/) { #if it's exome ignore this step
+          #} else {
+          ###if clinVar is pathogenic or probably-pathogenic - as long as one is designed as such
+          # print STDERR "colInfo=$colInfo\n";
+          my @splitLCV = split(/\|/,$colInfo);
+          my $cvPath = 0;
+          foreach my $cvS (@splitLCV) {
+            if (lc($cvS) eq "pathogenic") {
+              $cvPath = 1;
+            } elsif (lc($cvS) eq "probable-pathogenic") {
+              $cvPath = 1;
             }
           }
+          if ($cvPath == 1) {
+            $hgmdClinVar = 1;
+          }
         }
+        #}
       }
     }
 
     my $tidName = $splitTab[$colNum{'Transcript ID'}];
 
-    if (($qualFilter == 1) && ($locationFilter == 1) && (($espAFFilter == 1) && ($thouAFFilter == 1) && ($exacAFFilter == 1))) {
-      #print STDERR "1. key = $annChr:$annPos:$vtType\n";
-      if (defined $genePanelVar{"$annChr:$annPos:$vtType"}) {
-        #print STDERR "1. passed location filters $data\n";
-        $useVar = 1;
+
+    if (($qualFilter == 1) && ($locationFilter == 1)) {
+      if ($annotatedFile=~/exome/) {
+        if (($espAFFilter == 1) && ($thouAFFilter == 1) && ($exacAFFilter == 1) && (defined $genePanelVar{"$annChr:$annPos:$vtType"})) {
+          if ($snpEffLoc=~/intron_variant/ && $snpEffLoc!~/splice/) {
+            ###only looking at variants that are tagged as "intron_variant"
+            #parse out the cDNA
+            my $deepIntronicFilter = cDNAIntronPos($cDNAPos,$vtType);
+            print STDERR "deepIntronicFilter=$deepIntronicFilter\n";
+            if ($deepIntronicFilter == 0) {
+              $useVar = 1;
+            }
+          } else {
+            $useVar = 1;
+          }
+        }
+      } else {
+        if (($espAFFilter == 1) && ($thouAFFilter == 1) && ($exacAFFilter == 1) && (defined $genePanelVar{"$annChr:$annPos:$vtType"})) {
+          $useVar = 1;
+        }
       }
     }
+
     if ($hgmdClinVar == 1) { # if the variant has a hgmd or clinvar designation
-      #print STDERR "2. In ClinVar\n";
-      #print STDERR "2. key = $annChr:$annPos:$vtType\n";
-      if (defined $diseaseGeneTranscript{"$annChr:$annPos:$vtType"} && (($snpEffLoc=~/utr/i) || ($snpEffLoc=~/splice/i)) ) { #if it's in the UTR in the gene panel (inside the transcript start and stop location)
-        $useVar = 1;
-        #print STDERR "2. UTR\n";
-      }
-      if (defined $genePanelVar{"$annChr:$annPos:$vtType"}) { #if it's in the genePanel
-        #print STDERR "2. genepanel\n";
-        $useVar = 1;
+      if ($annotatedFile=~/exome/) {
+        if (($espExomeAFFilter == 1) && ($thouExomeAFFilter == 1) && ($exacExomeAFFilter == 1)) {
+          $useVar = 1;
+        }
+      } else { #gene panel specific therefore no deep intronic variant will be seen here
+        #print STDERR "2. In ClinVar\n";
+        #print STDERR "2. key = $annChr:$annPos:$vtType\n";
+        if (defined $diseaseGeneTranscript{"$annChr:$annPos:$vtType"} && (($snpEffLoc=~/utr/i) || ($snpEffLoc=~/splice/i)) ) { #if it's in the UTR in the gene panel (inside the transcript start and stop location)
+          $useVar = 1;
+          #print STDERR "2. UTR\n";
+        }
+        if (defined $genePanelVar{"$annChr:$annPos:$vtType"}) { #if it's in the genePanel
+          #print STDERR "2. genepanel\n";
+          $useVar = 1;
+        }
       }
     }
 
     ###addition of splice site variant reported if not on exon +/-10bp and within transcript start and stop
-    if (($qualFilter == 1) && (($snpEffLoc=~/utr/i) || ($snpEffLoc=~/splice/i)) && (defined $diseaseGeneTranscript{"$annChr:$annPos:$vtType"}) && (!defined $genePanelVar{"$annChr:$annPos:$vtType"}) && (($espAFFilter == 1) && ($thouAFFilter == 1) && ($exacAFFilter == 1))) {
+    if (($qualFilter == 1) && ($snpEffLoc=~/splice/i) && (defined $diseaseGeneTranscript{"$annChr:$annPos:$vtType"}) && (!defined $genePanelVar{"$annChr:$annPos:$vtType"}) && (($espAFFilter == 1) && ($thouAFFilter == 1) && ($exacAFFilter == 1))) {
       $useVar = 1;
     }
+
+
 
     if ($useVar == 1) {
       #print STDERR "useVar=$useVar\n";
@@ -922,9 +961,15 @@ sub printformat {
     } elsif ($colHeader eq $zyg) { #zygosity
       #$counter = 4;
       $outputArray[4] = $colI;
+      #print STDERR "colI=$colI\n";
       if ($colI!~/alt/) {
+        #print STDERR "outputArray[3]=$outputArray[3]\n";
+        if (!defined $outputArray[3]) {
+          print STDERR "colI=$colI\n";
+          print STDERR "outputArray[4]=$outputArray[4]\n";
+        }
         my @splitLine = split(/\|/,$outputArray[3]);
-        $outputArray[3]= $splitLine[1];
+        $outputArray[3] = $splitLine[1];
       }
     } elsif ($colHeader eq $variantType) { #type of variant
       #$counter = 5;
@@ -933,20 +978,20 @@ sub printformat {
     } elsif ($colHeader eq $effect) {
       #$counter = 9;
 
-#      if ($colI=~/\|/) { #alt-het check to see if the effect is the same if it is only use one
-#        my @splitLine=split(/\|/,$colI);
-#        my $same = 1;
-#        for (my $i=1; $i < scalar(@splitLine); $i++) {
-#          if ($splitLine[0] ne $splitLine[$i]) {
-#            $same = 0;
-#          }
-#        }
-#        if ($same == 1) {
-#          $outputArray[9]= $splitLine[0];
-#        }
-#      } else {
-        $outputArray[9] = $colI;
-#      }
+      #      if ($colI=~/\|/) { #alt-het check to see if the effect is the same if it is only use one
+      #        my @splitLine=split(/\|/,$colI);
+      #        my $same = 1;
+      #        for (my $i=1; $i < scalar(@splitLine); $i++) {
+      #          if ($splitLine[0] ne $splitLine[$i]) {
+      #            $same = 0;
+      #          }
+      #        }
+      #        if ($same == 1) {
+      #          $outputArray[9]= $splitLine[0];
+      #        }
+      #      } else {
+      $outputArray[9] = $colI;
+      #      }
 
     } elsif ($colHeader eq $snpEffAnnAA) {
       #print STDERR "snpEFF AA = $colI\n";
@@ -1658,7 +1703,7 @@ sub findRightTx {
     my @splitC = split(/\,/,$annovarInfo);
 
     foreach my $isoforms (@splitC) {
-      print STDERR "EXON ISOFORM $isoforms\n";
+      #print STDERR "EXON ISOFORM $isoforms\n";
       my @splitD = split(/\:/,$isoforms);
       my $tTxID = "";           #$splitD[1];
       my $tcDNA = "";           #$splitD[3];
@@ -1718,11 +1763,11 @@ $workbook->close();
 #print STDERR "END filter_exomes.v1.beforeExcel.pl\n";
 
 sub alleleFreqComp {
-  my ($alleleFreq) = @_;
+  my ($alleleFreq, $rareFreq) = @_;
   my $filter = 1;
   if ((defined $alleleFreq) && ($alleleFreq ne "")) {
-    if ($alleleFreq=~/\;/) {    #if
-      my @splitL = split(/\;/,$alleleFreq);
+    if ($alleleFreq=~/\|/) {    #if
+      my @splitL = split(/\|/,$alleleFreq);
       foreach my $sFreq (@splitL) {
         if ($sFreq eq ".") {
           $filter = 1;
@@ -1744,4 +1789,37 @@ sub alleleFreqComp {
   }
 
   return $filter;
+}
+
+sub cDNAIntronPos {
+  ##returns 0 if not deep intronic, returns 1 if deep intronic
+  my ($cDNAPos, $varType) = @_;
+  my $deepIntronic = 0;
+  print STDERR "cDNAPos=$cDNAPos\n";
+  print STDERR "varType=$varType\n";
+  my $pos = "";
+  my @splitLcDNAPos = split(/\|/,$cDNAPos);
+  foreach my $splitPos (@splitLcDNAPos) {
+    if ($varType eq "indel") {
+      ###split on digits and take the last digit
+      my @numbers = $splitPos =~/\d+/g;
+      my $startpos = $numbers[1];
+      my $endpos = $numbers[scalar(@numbers)-1];
+      if ($startpos <= $endpos) {
+        $pos = $startpos;
+      } else {
+        $pos = $endpos;
+      }
+      print STDERR "indel pos = $pos\n";
+    } else {                    ###for snps
+      my @numbers = $splitPos =~/\d+/g;
+      $pos = $numbers[scalar(@numbers)-1];
+      print STDERR "snp pos = $pos\n";
+    }
+    if ($pos > $exonPaddingBp) {
+      $deepIntronic = 1;
+    }
+  }
+  print STDERR "deepIntronic=$deepIntronic\n";
+  return $deepIntronic;
 }
