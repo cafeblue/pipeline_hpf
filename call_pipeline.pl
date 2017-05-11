@@ -28,7 +28,7 @@ our $depthct                 = '';
 
 our ($pipeID, $gene_panel_text, $panelExon10bpPadFull, $panelExon10bpPadBedFile, $panelBedFile, $panelBedFileFull, $captureKitFile);
 
-our %pipeline_lst = ( 'cancerT' => \&cancerT, 'cancerN' => \&cancerN, 'exome' => \&exome, 'exome_newGP' => \&exome_newGP);
+our %pipeline_lst = ( 'cancerT' => \&cancerT, 'cancerN' => \&cancerN, 'exome' => \&exome, 'exome_newGP' => \&exome_newGP, 'rnaseq_tumor' => \&rnaseq_tumor);
 
 our %startPoint_lst = ( 'NEW' => '', 'bwaAlign' => '', 'picardMarkDup' => 'bwaAlign', #'picardMarkDupIndex' => "picardMarkDup/$sampleID.$postprocID.picard.sort.merged.rmdup.bam",
                         'gatkQscoreRecalibration' => "picardMarkDup/$sampleID.$postprocID.picard.sort.merged.rmdup.bam",
@@ -66,7 +66,7 @@ our $help =  <<EOF;
               -i,-startPoint              the job name which you want to resume.
               -n,-normalPair              The full path to the normal sample bam file which paired with a tumor sample
 
-              pipeline list: cancerT, cancerN, exome, exome_newGP
+              pipeline list: cancerT, cancerN, exome, exome_newGP, rnaseq_tumor
               startPoint list: NEW, bwaAlign, picardMarkDup,
                                gatkQscoreRecalibration, gatkCovCalExomeTargets,
                                gatkCovCalGP, gatkRawVariantsCall, gatkJointGenotyping, snpEff
@@ -251,6 +251,24 @@ sub cancerT {
  finished:                  @jobID_and_Pfolder   = &finished(@jobID_and_Pfolder);
 }
 
+sub rnaseq_tumor {
+  my @jobID_and_Pfolder;
+  if ($startPoint ne 'NEW') {
+    $jobID_and_Pfolder[0] = '';
+    if (ref($startPoint_lst{$startPoint})) {
+      push @jobID_and_Pfolder, @{$startPoint_lst{$startPoint}};
+    } else {
+      push @jobID_and_Pfolder, $startPoint_lst{$startPoint};
+    }
+    goto $startPoint;
+  }
+ NEW:                       @jobID_and_Pfolder   = &chk_sum;
+ star:                      @jobID_and_Pfolder   = &star(@jobID_and_Pfolder);
+ htseq:                     @jobID_and_Pfolder   = &htseq(@jobID_and_Pfolder);
+ rpkm_tpm:                  @jobID_and_Pfolder   = &rpkm_tpm(@jobID_and_Pfolder);
+ finished:                  @jobID_and_Pfolder   = &finished(@jobID_and_Pfolder);
+}
+
 
 sub check_opts {
   my $errmsg = "";
@@ -366,6 +384,47 @@ sub bwa_mem {
   }
 }
 
+sub star {
+  my ($jobID, $Pfolder) = @_;
+  my $depend = $jobID eq '' ? "" : " -aft afterok -o $jobID";
+  if ( -d "$runfolder/STAR") {
+    print "Jsub folder already exists, removing...\nrm -rf $runfolder/STAR\n";
+    `rm -rf $runfolder/STAR`;
+  }
+  my $input_read1 = join(",", chomp(`ls $fastqDir/*_R1_*.fastq.gz`));
+  my $input_read2 = join(",", chomp(`ls $fastqDir/*_R2_*.fastq.gz`));
+  my $cmd = 'echo \''
+    . 'export TMPDIR=/localhd/`echo $PBS_JOBID | cut -d. -f1 ` &&' . " \\\n"
+    . "\\\n"
+    . 'module load star/2.5.2b && ' . " \\\n"
+    . 'module load ' . $JAVA . ' && ' . " \\\n"
+    . "\\\n"
+    . "STAR --runThreadN 12 --genomeDir /hpf/largeprojects/pray/wei.wang/misc_files/star_genomes/GrCH37 \\\n"
+    . "--readFilesIn $input_read1 $input_read2 \\\n"
+    . '--sjdbGTFfile  /hpf/largeprojects/pray/wei.wang/RNASeq-pipeline/Homo_sapiens.GRCh37.75.gtf' . " \\\n"
+    . '--readFilesCommand zcat --sjdbOverhang 100 --outFileNamePrefix' . " $runfolder/STAR/star. \\\n"
+    . "--twopassMode Basic --outReadsUnmapped None --outSAMtype BAM Unsorted --alignIntronMin 10 \\\n"
+    . "--alignIntronMax 200000   --alignMatesGapMax 200000 --outSAMattributes Standard --outSAMstrandField intronMotif \\\n"
+    . "--sjdbScore 2 --outFilterType BySJout --outFilterMultimapNmax 20 --alignSJoverhangMin 8 --alignSJDBoverhangMin 1 \\\n"
+    . "--outFilterMismatchNmax 999 --outFilterIntronMotifs None --outSJfilterReads All --outFilterMismatchNoverLmax 0.06 \\\n"
+    . "--outFilterMatchNminOverLread 0.1 --bamRemoveDuplicatesType UniqueIdentical &&\\\n"
+    . "samtools view -h -b -F 0x0400 $runfolder/STAR/star.bam \\\n"
+    . "samtools sort -n - " . "$runfolder/STAR/$sampleID.$postprocID.nodup.uniq.sorted \\\n"
+    . 'java -jar -Djava.io.tmpdir=$TMPDIR -Xmx32G ' . $PICARDTOOLS . ' BuildBamIndex' . " INPUT=$runfolder/STAR/$sampleID.$postprocID.nodup.uniq.sorted.bam && \\\n"
+    . "ln -f $runfolder/samtools/$sampleID.$postprocID.nodup.uniq.sorted.merged.bam* $BACKUP_BASEDIR/bam/"
+    . "\'| jsub -j STAR -b $runfolder -nm 56000 -np 4 -nn 1 -nw 02:00:00 -ng localhd:100 $depend" ;
+  print "\n\n************\nSTAR:\n $cmd\n************\n\n";
+  my $cmdOut = `$cmd`;
+  print "============\n$cmdOut============\n\n";
+  if ($cmdOut =~ /^(\d+\[\])\n/) {
+    $jobID = "$1";
+    return($jobID,"STAR");
+  } else {
+    die "STAR for $runfolder failed to be submitted!\n";
+  }
+}
+
+
 sub picardMarkDup {
   my ($jobID, $Pfolder) = @_;
   my $depend = $jobID eq '' ? "" : " -aft afterok -o $jobID";
@@ -411,7 +470,6 @@ sub picardMarkDup {
     die "picardMarkDup for $runfolder failed to be submitted!\n";
   }
 }
-
 
 # sub picardMeanQualityByCycle {
 #   my ($jobID, $Pfolder) = @_;
@@ -1283,7 +1341,7 @@ sub muTect2 {
   my $cmd = 'echo \''
     . 'export TMPDIR=/localhd/`echo $PBS_JOBID | cut -d. -f1 ` &&' . " \\\n"
     . "\\\n"
-    . 'module load gatk/3.6.0 &&' . " \\\n"
+    . 'module load gatk/3.5.0 &&' . " \\\n"
     . 'module load annovar/2013.08.23 perl/5.20.1 &&' . " \\\n"
     . "\\\n"
     . 'chr=${PBS_ARRAYID};' . "\\\n"
@@ -1395,6 +1453,62 @@ sub muTect2Combine {
     return($jobID,"mutect2Combine/sid_$sampleID.aid_$postprocID.gp_$genePanel.indel.csv");
   } else {
     die "mutect2Combine for $runfolder failed to be submitted!\n";
+  }
+}
+
+sub htseq {
+  my ($jobID, $Pfolder) = @_;
+  my $depend = $jobID eq '' ? "" : "-aft afterok -o $jobID";
+  if ( -d "$runfolder/htseq") {
+    print "Jsub folder already exists, removing...\nrm -rf $runfolder/htseq\n";
+    `rm -rf $runfolder/htseq`;
+  }
+  my $cmd = 'echo \''
+    . 'export TMPDIR=/localhd/`echo $PBS_JOBID | cut -d. -f1 ` &&' . " \\\n"
+    . "\\\n"
+    . 'module load python/2.7.9 &&'
+    . " \\\n"
+    . "cd $runfolder/htseq"
+    . "htseq-count -r name -t exon -i gene_name -s no -f bam $runfolder/$Pfolder /hpf/largeprojects/pray/wei.wang/RNASeq-pipeline/Homo_sapiens.GRCh37.75.gtf | awk -f $SCRIPTDIR/htseq_dup.awk > $runfolder/htseq/$sampleID.$postprocID.htseq.rawcount.txt && \\\n"
+    . "ln -f *.rawcount.txt $BACKUP_BASEDIR/rnaseq_EP/ \\\n"
+    . "\\\n"
+    . "\'| jsub -j htseq -b $runfolder -nm 16000 -np 1 -nn 1 -nw 03:30:00 -ng localhd:10 $depend";
+  print "\n\n************\nhtseq:\n$cmd\n************\n\n";
+  my $cmdOut = `$cmd`;
+  print "============\n$cmdOut============\n\n";
+  if ($cmdOut =~ /^(\d+)\n/) {
+    $jobID = $1;
+    return($jobID,"htseq/$sampleID.$postprocID.$genePanel.htseq.rawcount.txt");
+  } else {
+    die "htseq for $runfolder failed to be submitted!\n";
+  }
+}
+
+sub rpkm_tpm {
+  my ($jobID, $Pfolder) = @_;
+  my $depend = $jobID eq '' ? "" : "-aft afterok -o $jobID";
+  if ( -d "$runfolder/rpkm_tpm") {
+    print "Jsub folder already exists, removing...\nrm -rf $runfolder/rpkm_tpm\n";
+    `rm -rf $runfolder/rpkm_tpm`;
+  }
+  my $cmd = 'echo \''
+    . 'export TMPDIR=/localhd/`echo $PBS_JOBID | cut -d. -f1 ` &&' . " \\\n"
+    . "\\\n"
+    . 'module load R/3.1.1shlib &&'
+    . " \\\n"
+    . "cd $runfolder/rpkm_tpm"
+    . "Rscript $SCRIPTDIR/rpkm_tpm.R $funfolder/rpkm_tpm $sampleID $postprocID $runfolder/$Pfolder && \\\n"
+    . "ln -f *.RPKM_TPM.txt $BACKUP_BASEDIR/rnaseq_EP/ \\\n"
+    . "\\\n"
+    . "\'| jsub -j rpkm_tpm -b $runfolder -nm 8000 -np 1 -nn 1 -nw 01:00:00 -ng localhd:10 $depend";
+  print "\n\n************\nrpkm_tpm:\n$cmd\n************\n\n";
+  my $cmdOut = `$cmd`;
+  print "============\n$cmdOut============\n\n";
+  if ($cmdOut =~ /^(\d+)\n/) {
+    $jobID = $1;
+    return($jobID,"rpkm_tpm/$sampleID.$postprocID.RPKM_TPM.txt");
+  } else {
+    die "rpkm_tpm for $runfolder failed to be submitted!\n";
   }
 }
 
