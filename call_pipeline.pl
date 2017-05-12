@@ -391,8 +391,10 @@ sub star {
     print "Jsub folder already exists, removing...\nrm -rf $runfolder/STAR\n";
     `rm -rf $runfolder/STAR`;
   }
-  my $input_read1 = join(",", chomp(`ls $fastqDir/*_R1_*.fastq.gz`));
-  my $input_read2 = join(",", chomp(`ls $fastqDir/*_R2_*.fastq.gz`));
+  my @input = `ls $fastqDir/*_R1_*.fastq.gz`;
+  my $input_read1 = join(",", chomp(@input));
+  @input = `ls $fastqDir/*_R2_*.fastq.gz`;
+  my $input_read2 = join(",", chomp(@input));
   my $cmd = 'echo \''
     . 'export TMPDIR=/localhd/`echo $PBS_JOBID | cut -d. -f1 ` &&' . " \\\n"
     . "\\\n"
@@ -1497,7 +1499,7 @@ sub rpkm_tpm {
     . 'module load R/3.1.1shlib &&'
     . " \\\n"
     . "cd $runfolder/rpkm_tpm"
-    . "Rscript $SCRIPTDIR/rpkm_tpm.R $funfolder/rpkm_tpm $sampleID $postprocID $runfolder/$Pfolder && \\\n"
+    . "Rscript $SCRIPTDIR/rpkm_tpm.R $runfolder/rpkm_tpm $sampleID $postprocID $runfolder/$Pfolder && \\\n"
     . "ln -f *.RPKM_TPM.txt $BACKUP_BASEDIR/rnaseq_EP/ \\\n"
     . "\\\n"
     . "\'| jsub -j rpkm_tpm -b $runfolder -nm 8000 -np 1 -nn 1 -nw 01:00:00 -ng localhd:10 $depend";
