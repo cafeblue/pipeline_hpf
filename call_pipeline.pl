@@ -9,7 +9,7 @@ use Time::Piece;
 ###########       Global Parameters   ##########################
 our ($sampleID, $postprocID, $fastqDir, $genePanel, $pipeline, $runfolder, $startPoint, $normalPair) = ('','','','','','','NEW','');
 
-my $pipeline_config_file = "/hpf/largeprojects/pray/clinical/config_test/v5_pipeline_cancer_config.txt"; #Future will be passed from the thing1 cmd
+my $pipeline_config_file = "/hpf/largeprojects/pray/clinical/config_test/v5_pipeline_rnaseq_config.txt"; #Future will be passed from the thing1 cmd
 my $genepanel_config_file = "/hpf/largeprojects/pray/clinical/config/v5.1_gene_panels_config.txt"; #Future will be passed from the thing1 cmd
 
 GetOptions ("sampleID|s=s" => \$sampleID,
@@ -31,6 +31,7 @@ our ($pipeID, $gene_panel_text, $panelExon10bpPadFull, $panelExon10bpPadBedFile,
 our %pipeline_lst = ( 'cancerT' => \&cancerT, 'cancerN' => \&cancerN, 'exome' => \&exome, 'exome_newGP' => \&exome_newGP, 'rnaseq_tumor' => \&rnaseq_tumor);
 
 our %startPoint_lst = ( 'NEW' => '', 'bwaAlign' => '', 'picardMarkDup' => 'bwaAlign', #'picardMarkDupIndex' => "picardMarkDup/$sampleID.$postprocID.picard.sort.merged.rmdup.bam",
+                        'star' => '', 'htseq' => "STAR/$sampleID.$postprocID.nodup.uniq.sorted.bam", rpkm_tpm => "htseq/$sampleID.$postprocID.$genePanel.htseq.rawcount.txt",  
                         'gatkQscoreRecalibration' => "picardMarkDup/$sampleID.$postprocID.picard.sort.merged.rmdup.bam",
                         # 'gatkGenoTyper' => "gatkQscoreRecalibration/$sampleID.$postprocID.realigned-recalibrated.bam",
                         'gatkCovCalExomeTargets' => "gatkQscoreRecalibration/$sampleID.$postprocID.realigned-recalibrated.bam",
@@ -205,6 +206,10 @@ sub cancerN {
   sleep 1;
  gatkCovCalGP:                                      &gatkCovCalGP(@jobID_and_Pfolder);
   sleep 1;
+ htseq:                     @jobID_and_Pfolder2  =  &htseq(@jobID_and_Pfolder);
+  sleep 1;
+ rpkm_tpm:                                          &rpkm_tpm(@jobID_and_Pfolder2);
+  sleep 1;
  gatkRawVariantsCall:       @jobID_and_Pfolder    = &gatkRawVariantsCallHC(@jobID_and_Pfolder);
   sleep 1;
  gatkRawVariants:                                   &gatkRawVariants(@jobID_and_Pfolder);
@@ -236,18 +241,34 @@ sub cancerT {
     goto $startPoint;
   }
  NEW:                       @jobID_and_Pfolder   = &chk_sum;
+  sleep 1;
  bwaAlign:                  @jobID_and_Pfolder   = &bwa_mem(@jobID_and_Pfolder);
+  sleep 1;
  picardMarkDup:             @jobID_and_Pfolder   = &picardMarkDup(@jobID_and_Pfolder);
+  sleep 1;
  picardCalculateHsMetrics:                         &picardCalculateHsMetrics(@jobID_and_Pfolder);
+  sleep 1;
  gatkQscoreRecalibration:   @jobID_and_Pfolder   = &gatkQscoreRecalibration(@jobID_and_Pfolder);
+  sleep 1;
+ htseq:                     @jobID_and_Pfolder2  = &htseq(@jobID_and_Pfolder);
+  sleep 1;
+ rpkm_tpm:                                         &rpkm_tpm(@jobID_and_Pfolder2);
+  sleep 1;
+ gatkRawVariantsCall:       @jobID_and_Pfolder   = &gatkRawVariantsCallHC(@jobID_and_Pfolder);
+  sleep 1;
  gatkCovCalGP:                                     &gatkCovCalGP(@jobID_and_Pfolder);
+  sleep 1;
  muTect2:                   @jobID_and_Pfolder2  = &muTect2(@jobID_and_Pfolder, $normalPair); 
+  sleep 1;
  muTect2Combine:            @jobID_and_Pfolder2  = &muTect2Combine(@jobID_and_Pfolder2, $normalPair); 
+  sleep 1;
  muTect:                    @jobID_and_Pfolder   = &muTect(@jobID_and_Pfolder, $normalPair);
+  sleep 1;
  muTectCombine:             @jobID_and_Pfolder   = &muTectCombine(@jobID_and_Pfolder, $normalPair);
    $jobID_and_Pfolder[0] = $jobID_and_Pfolder2[0] . ',' . @jobID_and_Pfolder[0]; 
    $jobID_and_Pfolder[1] = $jobID_and_Pfolder[1];
    $jobID_and_Pfolder[2] = $jobID_and_Pfolder2[1];
+  sleep 1;
  finished:                  @jobID_and_Pfolder   = &finished(@jobID_and_Pfolder);
 }
 
@@ -264,8 +285,11 @@ sub rnaseq_tumor {
   }
  NEW:                       @jobID_and_Pfolder   = &chk_sum;
  star:                      @jobID_and_Pfolder   = &star(@jobID_and_Pfolder);
+  sleep 1;
  htseq:                     @jobID_and_Pfolder   = &htseq(@jobID_and_Pfolder);
+  sleep 1;
  rpkm_tpm:                  @jobID_and_Pfolder   = &rpkm_tpm(@jobID_and_Pfolder);
+  sleep 1;
  finished:                  @jobID_and_Pfolder   = &finished(@jobID_and_Pfolder);
 }
 
@@ -392,16 +416,19 @@ sub star {
     `rm -rf $runfolder/STAR`;
   }
   my @input = `ls $fastqDir/*_R1_*.fastq.gz`;
-  my $input_read1 = join(",", chomp(@input));
+  chomp(@input);
+  my $input_read1 = join(",", @input);
   @input = `ls $fastqDir/*_R2_*.fastq.gz`;
-  my $input_read2 = join(",", chomp(@input));
+  chomp(@input);
+  my $input_read2 = join(",", @input);
   my $cmd = 'echo \''
     . 'export TMPDIR=/localhd/`echo $PBS_JOBID | cut -d. -f1 ` &&' . " \\\n"
     . "\\\n"
     . 'module load star/2.5.2b && ' . " \\\n"
+    . 'module load ' . $SAMTOOLS . ' && ' . " \\\n"
     . 'module load ' . $JAVA . ' && ' . " \\\n"
     . "\\\n"
-    . "STAR --runThreadN 12 --genomeDir /hpf/largeprojects/pray/wei.wang/misc_files/star_genomes/GrCH37 \\\n"
+    . "STAR --runThreadN 4 --genomeDir /hpf/largeprojects/pray/wei.wang/misc_files/star_genomes/GrCH37 \\\n"
     . "--readFilesIn $input_read1 $input_read2 \\\n"
     . '--sjdbGTFfile  /hpf/largeprojects/pray/wei.wang/RNASeq-pipeline/Homo_sapiens.GRCh37.75.gtf' . " \\\n"
     . '--readFilesCommand zcat --sjdbOverhang 100 --outFileNamePrefix' . " $runfolder/STAR/star. \\\n"
@@ -409,18 +436,19 @@ sub star {
     . "--alignIntronMax 200000   --alignMatesGapMax 200000 --outSAMattributes Standard --outSAMstrandField intronMotif \\\n"
     . "--sjdbScore 2 --outFilterType BySJout --outFilterMultimapNmax 20 --alignSJoverhangMin 8 --alignSJDBoverhangMin 1 \\\n"
     . "--outFilterMismatchNmax 999 --outFilterIntronMotifs None --outSJfilterReads All --outFilterMismatchNoverLmax 0.06 \\\n"
-    . "--outFilterMatchNminOverLread 0.1 --bamRemoveDuplicatesType UniqueIdentical &&\\\n"
-    . "samtools view -h -b -F 0x0400 $runfolder/STAR/star.bam \\\n"
-    . "samtools sort -n - " . "$runfolder/STAR/$sampleID.$postprocID.nodup.uniq.sorted \\\n"
-    . 'java -jar -Djava.io.tmpdir=$TMPDIR -Xmx32G ' . $PICARDTOOLS . ' BuildBamIndex' . " INPUT=$runfolder/STAR/$sampleID.$postprocID.nodup.uniq.sorted.bam && \\\n"
-    . "ln -f $runfolder/samtools/$sampleID.$postprocID.nodup.uniq.sorted.merged.bam* $BACKUP_BASEDIR/bam/"
-    . "\'| jsub -j STAR -b $runfolder -nm 56000 -np 4 -nn 1 -nw 02:00:00 -ng localhd:100 $depend" ;
+    . "--outFilterMatchNminOverLread 0.1 --bamRemoveDuplicatesType UniqueIdentical && \\\n"
+    . "samtools view -h -b -F 0x0400 $runfolder/STAR/star.Aligned.out.bam | \\\n"
+    . 'java -jar -Djava.io.tmpdir=$TMPDIR -Xmx4G ' . $PICARDTOOLS . " SortSam INPUT=/dev/stdin OUTPUT=$runfolder/STAR/$sampleID.$postprocID.nodup.uniq.sorted.bam" . ' VALIDATION_STRINGENCY=SILENT SORT_ORDER=coordinate TMP_DIR=$TMPDIR &&' . " \\\n"
+    #. "samtools sort -n -o $runfolder/STAR/$sampleID.$postprocID.nodup.uniq.sorted.bam - && \\\n"
+    #. 'java -jar -Djava.io.tmpdir=$TMPDIR -Xmx32G ' . $PICARDTOOLS . ' BuildBamIndex' . " INPUT=$runfolder/STAR/$sampleID.$postprocID.nodup.uniq.sorted.bam && \\\n"
+    . "ln -f $runfolder/STAR/$sampleID.$postprocID.nodup.uniq.sorted.merged.bam* $BACKUP_BASEDIR/bam/"
+    . "\'| jsub -j STAR -b $runfolder -nm 56000 -np 4 -nn 1 -nw 09:00:00 -ng localhd:100 $depend" ;
   print "\n\n************\nSTAR:\n $cmd\n************\n\n";
   my $cmdOut = `$cmd`;
   print "============\n$cmdOut============\n\n";
-  if ($cmdOut =~ /^(\d+\[\])\n/) {
+  if ($cmdOut =~ /^(\d+)\n/) {
     $jobID = "$1";
-    return($jobID,"STAR");
+    return($jobID,"STAR/$sampleID.$postprocID.nodup.uniq.sorted.bam");
   } else {
     die "STAR for $runfolder failed to be submitted!\n";
   }
@@ -1470,17 +1498,18 @@ sub htseq {
     . "\\\n"
     . 'module load python/2.7.9 &&'
     . " \\\n"
-    . "cd $runfolder/htseq"
-    . "htseq-count -r name -t exon -i gene_name -s no -f bam $runfolder/$Pfolder /hpf/largeprojects/pray/wei.wang/RNASeq-pipeline/Homo_sapiens.GRCh37.75.gtf | awk -f $SCRIPTDIR/htseq_dup.awk > $runfolder/htseq/$sampleID.$postprocID.htseq.rawcount.txt && \\\n"
+    . "cd $runfolder/htseq && \\\n"
+    . "htseq-count -r name -t exon -i gene_id -s no -f bam $runfolder/$Pfolder /hpf/largeprojects/pray/wei.wang/RNASeq-pipeline/Homo_sapiens.GRCh37.75.gtf | \\\n"
+    . "awk -f $SCRIPTDIR/htseq_dup.awk > $runfolder/htseq/$sampleID.$postprocID.htseq.rawcount.txt && \\\n"
     . "ln -f *.rawcount.txt $BACKUP_BASEDIR/rnaseq_EP/ \\\n"
     . "\\\n"
-    . "\'| jsub -j htseq -b $runfolder -nm 16000 -np 1 -nn 1 -nw 03:30:00 -ng localhd:10 $depend";
+    . "\'| jsub -j htseq -b $runfolder -nm 16000 -np 1 -nn 1 -nw 08:30:00 -ng localhd:10 $depend";
   print "\n\n************\nhtseq:\n$cmd\n************\n\n";
   my $cmdOut = `$cmd`;
   print "============\n$cmdOut============\n\n";
   if ($cmdOut =~ /^(\d+)\n/) {
     $jobID = $1;
-    return($jobID,"htseq/$sampleID.$postprocID.$genePanel.htseq.rawcount.txt");
+    return($jobID,"htseq/$sampleID.$postprocID.htseq.rawcount.txt");
   } else {
     die "htseq for $runfolder failed to be submitted!\n";
   }
@@ -1498,7 +1527,7 @@ sub rpkm_tpm {
     . "\\\n"
     . 'module load R/3.1.1shlib &&'
     . " \\\n"
-    . "cd $runfolder/rpkm_tpm"
+    . "cd $runfolder/rpkm_tpm && "
     . "Rscript $SCRIPTDIR/rpkm_tpm.R $runfolder/rpkm_tpm $sampleID $postprocID $runfolder/$Pfolder && \\\n"
     . "ln -f *.RPKM_TPM.txt $BACKUP_BASEDIR/rnaseq_EP/ \\\n"
     . "\\\n"

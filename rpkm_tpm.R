@@ -9,7 +9,7 @@ library(edgeR)
 # setup directory with data to normalize
 setwd(commandArgs(TRUE)[1])
 # read raw data
-raw.data <- read.table( paste("../", commandArgs(TRUE)[4], sep="") , header = FALSE, sep="\t", row.names =1 )
+raw.data <- read.table( commandArgs(TRUE)[4] , header = FALSE, sep="\t", row.names =1 )
 # remove no features and ambiguous count
 remove <- c("__alignment_not_unique", "__not_aligned", "__too_low_aQual", "__ambiguous", "__no_feature", scan('/hpf/largeprojects/pray/wei.wang/RNASeq-pipeline/RNA-Seq_blacklist.txt', character(), quote = ""), scan('/hpf/largeprojects/pray/wei.wang/RNASeq-pipeline/RNA-Seq_shortgene.txt', character(), quote = ""))
 rows_to_remove <- which(row.names(raw.data) %in% remove)
@@ -22,14 +22,14 @@ library(GenomicRanges)
 library(rtracklayer)
 GTFfile = "/hpf/largeprojects/pray/wei.wang/RNASeq-pipeline/Homo_sapiens.GRCh37.75.gtf"
 GTF <- import.gff(GTFfile, format="gtf", feature.type="exon")
-grl <- reduce(split(GTF, elementMetadata(GTF)$gene_name))
+grl <- reduce(split(GTF, elementMetadata(GTF)$gene_id))
 reducedGTF <- unlist(grl, use.names=T)
-elementMetadata(reducedGTF)$gene_name <- rep(names(grl), elementLengths(grl))
+elementMetadata(reducedGTF)$gene_id <- rep(names(grl), elementLengths(grl))
 elementMetadata(reducedGTF)$widths <- width(reducedGTF)
 calc_length <- function(x) {
 sum(elementMetadata(x)$widths)
 }
-gene_length <- as.data.frame(sapply(split(reducedGTF, elementMetadata(reducedGTF)$gene_name), calc_length))
+gene_length <- as.data.frame(sapply(split(reducedGTF, elementMetadata(reducedGTF)$gene_id), calc_length))
 # extract read length for genes selected in DGE
 genelist <- rownames(DGE$counts)
 list <- match( genelist , rownames(gene_length) )
